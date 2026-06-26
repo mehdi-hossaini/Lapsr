@@ -1,0 +1,12 @@
+# Lapsr
+
+> Free focus timer with expiring credits. A weekly or monthly budget of focus sessions runs on a live countdown; credits not claimed inside a daily 5-hour window forfeit a real stake. Local-only PWA — no signup, no account, works offline.
+
+## About
+- [Lapsr](https://mehdi-hossaini.github.io/Lapsr/): set a period (week/month) budget and a money stake, claim a credit by finishing a focus session inside the daily window, and forfeit the stake on credits you waste. Built to break the freeze of open-ended work.
+
+## Key facts
+- Free, no account, no ads. Runs entirely in-browser, installable as a PWA, works offline.
+- Data is local-only; move it between devices via JSON export/import. No server, no tracking.
+- Designed for deep work, studying, and ADHD focus — external structure via a visible countdown and a "use it or lose it" stake.
+- Differs from a Pomodoro timer: it meters a fixed credit budget with a financial penalty for waste, not an open-ended clock.
