@@ -1,0 +1,14 @@
+{
+  "name": "Lapsr",
+  "short_name": "Lapsr",
+  "description": "Spend the interval — a finite period of focus credits that expire if unused.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbf1c7",
+  "theme_color": "#fbf1c7",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
