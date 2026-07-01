@@ -9,6 +9,7 @@
 <meta name="description" content="Free focus timer with expiring credits — a weekly/monthly budget of focus sessions on a live countdown; unused credits forfeit a stake. No signup, works offline." />
 <meta name="keywords" content="focus timer, pomodoro timer, free focus timer, deep work timer, study timer, ADHD focus app, productivity timer, time blocking" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
+<meta name="color-scheme" content="light dark" />
 <!-- SEO: canonical/OG host = GitHub Pages -->
 <link rel="canonical" href="https://mehdi-hossaini.github.io/Lapsr/" />
 <meta property="og:type" content="website" />
@@ -16,14 +17,17 @@
 <meta property="og:title" content="Lapsr — Free Focus Timer with Expiring Credits" />
 <meta property="og:description" content="A free online focus timer for deep work, study & ADHD. A weekly/monthly budget of focus-session credits on a live countdown — unused credits expire and forfeit a stake. No signup, works offline." />
 <meta property="og:url" content="https://mehdi-hossaini.github.io/Lapsr/" />
-<meta property="og:image" content="https://mehdi-hossaini.github.io/Lapsr/icon.svg" />
-<meta name="twitter:card" content="summary" />
+<meta property="og:image" content="https://mehdi-hossaini.github.io/Lapsr/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Lapsr — free focus timer with expiring credits" />
+<meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Lapsr — Free Focus Timer, Use It or Lose It" />
 <meta name="twitter:description" content="A free online focus timer for deep work, study & ADHD: a budget of focus-session credits on a countdown. Unused credits expire and forfeit a stake. No signup." />
-<meta name="twitter:image" content="https://mehdi-hossaini.github.io/Lapsr/icon.svg" />
+<meta name="twitter:image" content="https://mehdi-hossaini.github.io/Lapsr/og.png" />
 <link rel="manifest" href="./manifest.webmanifest" />
 <link rel="icon" href="./icon.svg" />
-<link rel="apple-touch-icon" href="./icon.svg" />
+<link rel="apple-touch-icon" href="./apple-touch-icon.png" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -66,17 +70,21 @@
 <style>
   /* Lapsr — minimalist. Restraint, negative space, one ink accent. */
   :root{
+    color-scheme:light;
     /* gruvbox light */
     --bg:#fbf1c7; --panel:#fbf1c7; --line:#d5c4a1; --txt:#3c3836; --dim:#7c6f64;
     --field:#f9f5d7; --accent:#d65d0e; --accent-dk:#af3a03; --on-accent:#fbf1c7; --danger:#cc241d;
   }
   @media (prefers-color-scheme: dark){
     :root{
+      color-scheme:dark;
       /* gruvbox dark */
       --bg:#282828; --panel:#282828; --line:#3c3836; --txt:#ebdbb2; --dim:#928374;
       --field:#32302f; --accent:#fe8019; --accent-dk:#d65d0e; --on-accent:#282828; --danger:#fb4934;
     }
   }
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation:none!important;transition:none!important} }
   *{box-sizing:border-box}
   .vh{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}  /* visually hidden, kept for SEO/a11y */
   body{margin:0;font:400 15px/1.6 'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);
@@ -183,8 +191,11 @@
   @keyframes ripple{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent)}70%,100%{box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 0%,transparent)}}
   .explain{border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent);padding-top:16px;font-size:12.5px;color:var(--dim);margin-top:18px;line-height:1.8}
   .explain b{color:var(--txt);font-weight:500}
+  .explain ol{margin:0;padding-left:20px}
+  .explain ol li{margin:8px 0}
   details summary{cursor:pointer;color:var(--dim);font-size:12px;letter-spacing:.04em}
   .logempty{color:var(--dim);font-size:13px}
+  .streak{float:right;color:var(--accent);letter-spacing:.12em}
   .goal{margin:0 0 20px;font-size:14px;color:var(--txt);line-height:1.5}
   .goal .lab{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.18em;color:var(--dim);margin-bottom:5px}
   .goal.empty{color:var(--dim);font-size:13px}
@@ -284,7 +295,7 @@
 
   <!-- COMPLETED LOG (github-commit style) -->
   <section class="panel">
-    <h2>Completed</h2>
+    <h2>Completed<span class="streak" id="streak"></span></h2>
     <div class="goal" id="goalLine"></div>
     <div class="log" id="log"></div>
   </section>
@@ -320,6 +331,18 @@
     <div class="hint">Data lives only on this device. Export a JSON backup, or import it on another device to move your credits, plan, and ledger across.</div>
   </section>
 
+  <!-- HOW IT WORKS — crawlable steps for search + first-time visitors -->
+  <section class="panel">
+    <h2>How it works</h2>
+    <div class="explain">
+      <ol>
+        <li><b>Set a plan.</b> Pick a weekly or monthly budget of focus credits, a session length, and a money stake for the period.</li>
+        <li><b>Show up inside the daily window.</b> Credits are only claimable during your daily focus window — finish a focus session to claim one, then take the break.</li>
+        <li><b>Use it or lose it.</b> Any of the day's share you don't claim before the window closes is forfeited for good, and unused credits at period end forfeit their share of the stake.</li>
+      </ol>
+    </div>
+  </section>
+
   <!-- ABOUT / FAQ — crawlable content for search + first-time visitors -->
   <section class="panel">
     <h2>About Lapsr</h2>
@@ -343,6 +366,7 @@
         <div class="emhead">Emergency days</div>
         <p class="emnote">Genuine emergencies only — illness, a family crisis. Not "I don't feel like it." Pre-commit the night before; that day's stake is shielded, nothing forfeited. They don't come back.</p>
         <div class="emtokens" id="restCount" aria-label="emergency days remaining"></div>
+        <input id="restDate" type="date" class="vh" tabindex="-1" aria-hidden="true" />
         <button id="planRest" class="embtn" type="button">Use an emergency day</button>
         <div id="restList" class="emlist"></div>
       </div>
@@ -399,7 +423,8 @@ function windowState(cfg, now){
   return {phase:"after", open:new Date(open.getTime()+t), close:new Date(close.getTime()+t), next:new Date(open.getTime()+t)};
 }
 function dailyAllot(s){ const days=periodDays(s.cfg,new Date(),s.startedAt); return days? s.cfg.budget/days : 0; }
-function claimedInWindow(s, open, close){ const a=open.getTime(), b=close.getTime(); return (s.marks||[]).filter(m=>m.t>=a&&m.t<b).length; }
+function claimedInWindow(s, open, close){ const a=open.getTime(), b=close.getTime();
+  return (s.marks||[]).filter(m=>{ const t=m.t0??m.t; return t>=a&&t<b; }).length; }  // attribute by session START — a session straddling window-close still counts for its day
 function canStart(s, now){
   if(!s.startedAt) return {ok:false, msg:"Save your plan first to start the clock."};
   if(creditsRemaining(s)<=0) return {ok:false, msg:"No credits left this period. Wait for the reset."};
@@ -489,8 +514,21 @@ function importData(file){
 }
 
 // ===== focus session — two-phase work→break, drift-free =====
-let phase=null, phaseEndTs=null, ticker=null, curIntent="";
+let phase=null, phaseEndTs=null, ticker=null, curIntent="", curT0=0;
 const $=id=>document.getElementById(id);
+const BASE_TITLE=document.title;
+
+// ---- phase-end signals: a focus timer that ends silently in another tab is broken ----
+let audioCtx=null;
+function beep(n){ try{ audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+  const t=audioCtx.currentTime;
+  for(let i=0;i<n;i++){ const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination); o.frequency.value=880;
+    g.gain.setValueAtTime(.12,t+i*.28); g.gain.exponentialRampToValueAtTime(.001,t+i*.28+.22);
+    o.start(t+i*.28); o.stop(t+i*.28+.24); }
+}catch(e){} }
+function notify(body){ if(window.Notification && Notification.permission==="granted")
+  try{ new Notification("Lapsr",{body,icon:"./icon.svg",tag:"lapsr-phase"}); }catch(e){} }
 function setBtns(){ const cs=canStart(state,new Date());
   $("startBlock").disabled = !cs.ok || phase!==null; $("cancelBlock").disabled = phase===null;
   $("phaseTag").textContent = phase==="work" ? "● focusing" : phase==="break" ? "○ recovering — walk, look away" : "";
@@ -503,18 +541,20 @@ function startBlock(){
   if(!cs.ok){ alert(cs.msg); return; }
   curIntent=$("intent").value.trim();
   if(!curIntent && !confirm("Start without naming the task? Naming it boosts follow-through.")) return;
-  phase="work"; phaseEndTs=Date.now()+state.cfg.block*60*1000;
-  state.session={phase,endTs:phaseEndTs,intent:curIntent}; commit();   // persist so screen-off/reload resumes
+  if(window.Notification && Notification.permission==="default") Notification.requestPermission();  // ask inside the click gesture
+  beep(0);                                                             // unlock AudioContext inside the gesture (autoplay policy)
+  phase="work"; curT0=Date.now(); phaseEndTs=curT0+state.cfg.block*60*1000;
+  state.session={phase,endTs:phaseEndTs,intent:curIntent,t0:curT0}; commit();   // persist so screen-off/reload resumes
   $("blockHint").textContent = curIntent ? "Now: "+curIntent : "Focused, single-task work.";
   setBtns(); tick(); ticker=setInterval(tick,250);
 }
 function startBreak(anchor){ phase="break"; phaseEndTs=(anchor||Date.now())+state.cfg.brk*60*1000;  // anchor = true work-end ts when resuming, else now
   state.session={phase,endTs:phaseEndTs,intent:""}; commit();
   $("blockHint").textContent="Recover — walk, stretch, look away. Screens don't restore attention."; setBtns(); tick(); if(!ticker) ticker=setInterval(tick,250); }
-function endTimer(){ clearInterval(ticker); ticker=null; phase=null; phaseEndTs=null; state.session=null; saveLocal(state); $("blockTimer").textContent="--:--"; setBtns(); }
+function endTimer(){ clearInterval(ticker); ticker=null; phase=null; phaseEndTs=null; curT0=0; state.session=null; saveLocal(state); $("blockTimer").textContent="--:--"; document.title=BASE_TITLE; setBtns(); }
 function resumeSession(){   // restore an in-progress session after reload/sleep using its absolute end-timestamp
   const s=state.session; if(!s) return;
-  curIntent=s.intent||"";
+  curIntent=s.intent||""; curT0=s.t0||0;
   if(s.endTs-Date.now()>0){ phase=s.phase; phaseEndTs=s.endTs;
     $("blockHint").textContent = s.phase==="break" ? "Recover — walk, look away." : (curIntent?("Now: "+curIntent):"Focused work.");
     setBtns(); tick(); ticker=setInterval(tick,250); }
@@ -522,15 +562,18 @@ function resumeSession(){   // restore an in-progress session after reload/sleep
   else { state.session=null; saveLocal(state); }  // break already over
 }
 function cancelBlock(){ const b=phase==="break"; endTimer(); $("blockHint").textContent = b?"Break skipped.":"Cancelled — no credit claimed."; }
-function completeWork(anchor){ const now=Date.now(); state.spent+=1; state.marks.push({t:now,spent:state.spent,intent:curIntent});
+function completeWork(anchor){ const now=Date.now(); state.spent+=1; state.marks.push({t:now,t0:curT0||now,spent:state.spent,intent:curIntent});
   state.log.push({t:now,intent:curIntent}); if(state.log.length>200) state.log=state.log.slice(-200);  // cap history
   commit(); render(); refreshChart();
   $("intent").value=""; curIntent="";
+  beep(2); notify("Session done — credit claimed. Take the break.");
   if(creditsRemaining(state)===0){ endTimer(); $("blockHint").textContent="All credits claimed. Rest until the period resets."; return; }
   startBreak(anchor); }
 function tick(){ const left=phaseEndTs-Date.now(), t=Math.max(0,Math.floor(left/1000));
-  $("blockTimer").textContent=`${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`;
-  if(left<=0){ if(phase==="work") completeWork(); else endTimer(); } }
+  const mmss=`${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`;
+  $("blockTimer").textContent=mmss;
+  document.title=(phase==="break"?"break ":"")+mmss+" · Lapsr";     // countdown visible from any tab
+  if(left<=0){ if(phase==="work") completeWork(); else { endTimer(); beep(1); notify("Break over — back to it."); } } }
 
 // ===== chart: credits used vs steady pace, across the period =====
 let chart;
@@ -558,6 +601,13 @@ function relTime(t){ const s=Math.floor((Date.now()-t)/1000);
   if(s<60) return "just now"; if(s<3600) return Math.floor(s/60)+"m ago";
   if(s<86400) return Math.floor(s/3600)+"h ago"; return Math.floor(s/86400)+"d ago"; }
 function shortId(t){ return (t%0xfffffff).toString(16).padStart(7,"0").slice(-7); }
+// streak = consecutive calendar days with ≥1 completed session, ending today (or yesterday, so it doesn't break before you've worked today)
+function streakDays(log){
+  const days=new Set((log||[]).map(e=>dayKey(e.t)));
+  let d=new Date(); if(!days.has(dayKey(d))) d=new Date(d.getTime()-86400000);
+  let n=0; while(days.has(dayKey(d))){ n++; d=new Date(d.getTime()-86400000); }
+  return n;
+}
 let _logSig="";
 function renderLog(){
   const log=state.log||[];
@@ -625,6 +675,8 @@ function render(){
   const g=$("goalLine");
   if(state.goal){ g.className="goal"; g.innerHTML='<span class="lab">Goal · '+label.toLowerCase()+'</span>'+escapeHtml(state.goal); }
   else { g.className="goal empty"; g.textContent="No goal set — add one in Plan. Each completed session is a step toward it."; }
+  const stk=streakDays(state.log);
+  $("streak").textContent = stk>=2 ? stk+"-day streak" : "";
   renderLog();
   renderRest();
   renderStatus();
@@ -674,16 +726,8 @@ function savePlan(){ const old=state.cfg.period, firstStart=!state.startedAt;
   }
   fillSettings(); commit(); refreshChart(); render(); }
 // ===== rest days — pre-commit a future day off; locked the night before, no same-day opt-outs =====
-function planRestDay(){
-  if(!state.startedAt){ alert("Save your plan first to start the clock."); return; }
-  if(state.restDays.length>=restBudget(state)){ alert("No emergency days left this period (max "+restBudget(state)+"). Raise it in Plan."); return; }
-  const gate=prompt("Type EMERGENCY (all caps) to confirm this is a real emergency, not laziness.");
-  if(gate===null) return;
-  if(gate.trim()!=="EMERGENCY"){ alert("Not confirmed. Emergency days are for genuine emergencies only."); return; }
-  const def=dayKey(Date.now()+86400000);                          // default = tomorrow
-  const v=prompt("Which future day? (YYYY-MM-DD) — locked the night before, so no waking up and opting out same-day.", def);
-  if(v===null) return;
-  const m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(v.trim());
+function commitRestDay(v){
+  const m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec((v||"").trim());
   if(!m){ alert("Use the date format YYYY-MM-DD."); return; }
   const target=new Date(+m[1],+m[2]-1,+m[3]);
   const todayStart=new Date(); todayStart.setHours(0,0,0,0);
@@ -694,6 +738,20 @@ function planRestDay(){
   if(state.restDays.includes(k)){ alert("That day is already an emergency day."); return; }
   state.restDays.push(k); state.restDays.sort(); commit(); render();
 }
+function planRestDay(){
+  if(!state.startedAt){ alert("Save your plan first to start the clock."); return; }
+  if(state.restDays.length>=restBudget(state)){ alert("No emergency days left this period (max "+restBudget(state)+"). Raise it in Plan."); return; }
+  const gate=prompt("Type EMERGENCY (all caps) to confirm this is a real emergency, not laziness.");
+  if(gate===null) return;
+  if(gate.trim()!=="EMERGENCY"){ alert("Not confirmed. Emergency days are for genuine emergencies only."); return; }
+  const def=dayKey(Date.now()+86400000);                          // default = tomorrow
+  const {end}=periodBounds(state.cfg,new Date(),state.startedAt);
+  const inp=$("restDate"); inp.min=def; inp.max=dayKey(end.getTime()-1); inp.value=def;
+  try{ inp.showPicker(); }                                        // native calendar; min/max validate for free
+  catch(e){ const v=prompt("Which future day? (YYYY-MM-DD) — locked the night before, so no waking up and opting out same-day.", def);
+    if(v!==null) commitRestDay(v); }
+}
+$("restDate").onchange=e=>{ if(e.target.value) commitRestDay(e.target.value); e.target.value=""; };
 function unmarkRestDay(k){                                         // only future, unsettled rest days can be released
   const todayStart=new Date(); todayStart.setHours(0,0,0,0);
   const [y,mo,d]=k.split("-").map(Number); const day=new Date(y,mo-1,d);
@@ -770,6 +828,12 @@ if(new URLSearchParams(location.search).get("test")==="1"){
   const sr={cfg:cw, startedAt:new Date(2026,5,22,0,0).getTime(), spent:0, marks:[], wasted:0, forfeitedCredits:0, restedCredits:0, restDays:["2026-06-23"], settledThrough:0};
   settleWindows(sr, new Date(2026,5,23,15,0));   // Mon (22nd) forfeits, Tue (23rd) is a rest day → set aside, no forfeit
   console.assert(sr.forfeitedCredits===1 && Math.round(sr.wasted)===10 && sr.restedCredits===1, "rest day skips forfeit: 1 forfeited/10kr + 1 rested, got "+sr.forfeitedCredits+"/"+sr.wasted+"/"+sr.restedCredits);
+  // straddling session: started inside the window, finished after close → still counts for that day
+  const st={cfg:cw, startedAt:new Date(2026,5,22,0,0).getTime(), spent:1,
+    marks:[{t:new Date(2026,5,22,14,10).getTime(), t0:new Date(2026,5,22,13,30).getTime(), spent:1}],
+    wasted:0, forfeitedCredits:0, settledThrough:0};
+  settleWindows(st, new Date(2026,5,22,15,0));
+  console.assert(st.forfeitedCredits===0 && st.wasted===0, "straddling session claims its start-day window — no forfeit, got "+st.forfeitedCredits);
   console.assert(creditsRemaining({cfg:cw,spent:0,forfeitedCredits:1,restedCredits:1})===5, "rested + forfeited credits both leave the remaining pool");
   console.log("Lapsr self-check passed");
 }
