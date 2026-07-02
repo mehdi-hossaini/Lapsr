@@ -1,9 +1,10 @@
 // Lapsr service worker — app-shell cache for offline + installable PWA.
 // ponytail: bump CACHE on any shell change; cache-first for shell.
-const CACHE = "lapsr-v48";
+const CACHE = "lapsr-v49";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icon.svg",
-  "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"
+  "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
+  "./fonts/inter.woff2", "./fonts/jbmono.woff2"
 ];
 
 self.addEventListener("install", (e) => {

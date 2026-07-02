@@ -26,7 +26,8 @@
 <meta name="twitter:description" content="A free online focus timer for deep work, study & ADHD: a budget of focus-session credits on a countdown. Unused credits expire and forfeit a stake. No signup." />
 <meta name="twitter:image" content="https://mehdi-hossaini.github.io/Lapsr/og.png" />
 <link rel="manifest" href="./manifest.webmanifest" />
-<link rel="icon" href="./icon.svg" />
+<link rel="icon" href="./icon.svg" type="image/svg+xml" />
+<link rel="icon" href="./icon-192.png" type="image/png" sizes="192x192" />
 <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
 <script type="application/ld+json">
 {
@@ -63,11 +64,13 @@
   ]
 }
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="preload" href="./fonts/inter.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="./fonts/jbmono.woff2" as="font" type="font/woff2" crossorigin />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <style>
+  /* self-hosted variable fonts (latin subset) — no third-party requests, works offline */
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400 500;font-display:swap;src:url('./fonts/inter.woff2') format('woff2')}
+  @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400 500;font-display:swap;src:url('./fonts/jbmono.woff2') format('woff2')}
   /* Lapsr — minimalist. Restraint, negative space, one ink accent. */
   :root{
     color-scheme:light;
@@ -490,8 +493,24 @@ function normalize(s){
   return s;
 }
 function loadLocal(){ let s; try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){s=null} return normalize(s); }
-function saveLocal(s){ localStorage.setItem(KEY, JSON.stringify(s)); }
-let state=loadLocal();
+const DEMO=new URLSearchParams(location.search).get("demo")==="1";
+function saveLocal(s){ if(DEMO) return; localStorage.setItem(KEY, JSON.stringify(s)); }  // demo never touches real data
+// ?demo=1 — seeded mid-week state for screenshots/demos; in-memory only
+function demoState(){
+  const now=Date.now(), day=86400000, d=new Date();
+  const winStart=Math.max(0,Math.min(1439-360, d.getHours()*60+d.getMinutes()-90));   // window opened ~90 min ago
+  const cfg={...DEFAULTS, budget:20, stake:200, windowStart:winStart, windowH:6};
+  const intents=["draft section 2 of the report","reply to supplier emails","study: Swedish VAT chapter",
+    "ship the landing page hero","refactor the import flow","read 30 pages","outline the week",
+    "bookkeeping — VAT return","write product descriptions"];
+  const marks=intents.map((intent,i)=>{ const t=now-(3.1-i*0.36)*day; return {t, t0:t-cfg.block*60000, spent:i+1, intent}; });
+  const startedAt=now-3.3*day;
+  return normalize({cfg, startedAt, spent:marks.length, marks,
+    log:marks.map(m=>({t:m.t,intent:m.intent})), wasted:20, forfeitedCredits:2,
+    goal:"ship the landing page", settledThrough:now,
+    periodKey:periodBounds(cfg,new Date(),startedAt).key});
+}
+let state=DEMO? demoState() : loadLocal();
 
 function commit(){ state.updated_at=Date.now(); saveLocal(state); }
 
@@ -805,9 +824,10 @@ $("import").onclick=()=>$("importFile").click();
 $("importFile").onchange=(e)=>{ if(e.target.files[0]) importData(e.target.files[0]); e.target.value=""; };
 
 // ===== boot =====
+if(DEMO) document.querySelector("header .sub").textContent="demo data — nothing is saved";
 fillSettings(); refreshChart(); render(); resumeSession(); setInterval(render,1000);
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){
-  if(phase===null){ state=loadLocal(); fillSettings(); refreshChart(); render(); resumeSession(); }  // reload-after-sleep: restore running session
+  if(phase===null){ state=DEMO?demoState():loadLocal(); fillSettings(); refreshChart(); render(); resumeSession(); }  // reload-after-sleep: restore running session
   else { render(); lockScreen(); }                                    // still ticking: tick() self-corrects; wake lock auto-released on hide, re-grab it
 }});
 if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("SW:",e));

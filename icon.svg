@@ -1,7 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#fbf1c7"/>
+  <style>
+    rect{fill:#fbf1c7} path{stroke:#d65d0e}
+    @media (prefers-color-scheme: dark){ rect{fill:#282828} path{stroke:#fe8019} }
+  </style>
+  <rect width="512" height="512" rx="96"/>
   <!-- ensō: an open brush circle, gruvbox orange -->
   <path d="M256 116
            a140 140 0 1 0 96 38"
-        fill="none" stroke="#d65d0e" stroke-width="30" stroke-linecap="round"/>
+        fill="none" stroke-width="30" stroke-linecap="round"/>
 </svg>
