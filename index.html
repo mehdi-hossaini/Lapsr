@@ -66,7 +66,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<meta name="apple-mobile-web-app-capable" content="yes" />
 <style>
   /* Lapsr — minimalist. Restraint, negative space, one ink accent. */
   :root{
@@ -168,7 +168,7 @@
   .grid2 > div{display:flex;flex-direction:column}          /* cells stretch to row height; push control to bottom so inputs align despite 1- vs 2-line labels */
   .grid2 > div input,.grid2 > div select{margin-top:auto}
   .actions{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
-  canvas{max-height:200px}
+  svg.chart{width:100%;height:auto;display:block}
   .hint{color:var(--dim);font-size:12px;margin-top:16px;line-height:1.7}
   /* focus-session status block: live state line over a window-fill bar — elapsed window fills, claimed sessions punch through as ticks, now-edge glows */
   .sblock{margin-top:24px}
@@ -232,6 +232,7 @@
   <span class="sub">spend the interval — or lose it</span>
 </header>
 <main>
+  <noscript><p style="text-align:center">Lapsr needs JavaScript — it's a local-only focus timer; nothing runs on a server.</p></noscript>
   <!-- STATUS: period timer + credits + at-risk, all in one -->
   <section class="panel">
     <h2 id="periodLabel">This week</h2>
@@ -283,14 +284,14 @@
         <div class="strack" id="stTrack"><div class="sfill" id="stFill"></div><div class="snow" id="stNow"></div></div>
         <div class="sends"><span id="stOpen">--:--</span><span class="smid" id="stMid">today’s window</span><span id="stClose">--:--</span></div>
       </div>
-      <div class="hint" id="blockHint">Finish a focus session to claim one credit, then take the break.</div>
+      <div class="hint" id="blockHint" aria-live="polite">Finish a focus session to claim one credit, then take the break.</div>
     </div>
   </section>
 
   <!-- CHART -->
   <section class="panel">
     <h2>Credits used vs. steady pace</h2>
-    <canvas id="chart"></canvas>
+    <svg id="chart" class="chart" role="img" aria-label="Credits used over the period versus a steady pace line"></svg>
   </section>
 
   <!-- COMPLETED LOG (github-commit style) -->
@@ -529,6 +530,10 @@ function beep(n){ try{ audioCtx=audioCtx||new (window.AudioContext||window.webki
 }catch(e){} }
 function notify(body){ if(window.Notification && Notification.permission==="granted")
   try{ new Notification("Lapsr",{body,icon:"./icon.svg",tag:"lapsr-phase"}); }catch(e){} }
+// keep the screen awake while a session or break is ticking (auto-released when the tab hides)
+let wakeLock=null;
+async function lockScreen(){ unlockScreen(); try{ wakeLock=await navigator.wakeLock?.request("screen"); }catch(e){} }
+function unlockScreen(){ try{ wakeLock?.release(); }catch(e){} wakeLock=null; }
 function setBtns(){ const cs=canStart(state,new Date());
   $("startBlock").disabled = !cs.ok || phase!==null; $("cancelBlock").disabled = phase===null;
   $("phaseTag").textContent = phase==="work" ? "● focusing" : phase==="break" ? "○ recovering — walk, look away" : "";
@@ -545,17 +550,18 @@ function startBlock(){
   beep(0);                                                             // unlock AudioContext inside the gesture (autoplay policy)
   phase="work"; curT0=Date.now(); phaseEndTs=curT0+state.cfg.block*60*1000;
   state.session={phase,endTs:phaseEndTs,intent:curIntent,t0:curT0}; commit();   // persist so screen-off/reload resumes
+  lockScreen();
   $("blockHint").textContent = curIntent ? "Now: "+curIntent : "Focused, single-task work.";
   setBtns(); tick(); ticker=setInterval(tick,250);
 }
 function startBreak(anchor){ phase="break"; phaseEndTs=(anchor||Date.now())+state.cfg.brk*60*1000;  // anchor = true work-end ts when resuming, else now
-  state.session={phase,endTs:phaseEndTs,intent:""}; commit();
+  state.session={phase,endTs:phaseEndTs,intent:""}; commit(); lockScreen();
   $("blockHint").textContent="Recover — walk, stretch, look away. Screens don't restore attention."; setBtns(); tick(); if(!ticker) ticker=setInterval(tick,250); }
-function endTimer(){ clearInterval(ticker); ticker=null; phase=null; phaseEndTs=null; curT0=0; state.session=null; saveLocal(state); $("blockTimer").textContent="--:--"; document.title=BASE_TITLE; setBtns(); }
+function endTimer(){ clearInterval(ticker); ticker=null; phase=null; phaseEndTs=null; curT0=0; state.session=null; saveLocal(state); $("blockTimer").textContent="--:--"; document.title=BASE_TITLE; unlockScreen(); setBtns(); }
 function resumeSession(){   // restore an in-progress session after reload/sleep using its absolute end-timestamp
   const s=state.session; if(!s) return;
   curIntent=s.intent||""; curT0=s.t0||0;
-  if(s.endTs-Date.now()>0){ phase=s.phase; phaseEndTs=s.endTs;
+  if(s.endTs-Date.now()>0){ phase=s.phase; phaseEndTs=s.endTs; lockScreen();
     $("blockHint").textContent = s.phase==="break" ? "Recover — walk, look away." : (curIntent?("Now: "+curIntent):"Focused work.");
     setBtns(); tick(); ticker=setInterval(tick,250); }
   else if(s.phase==="work"){ completeWork(s.endTs); }   // finished while away → claim credit, anchor break to true work-end
@@ -575,25 +581,31 @@ function tick(){ const left=phaseEndTs-Date.now(), t=Math.max(0,Math.floor(left/
   document.title=(phase==="break"?"break ":"")+mmss+" · Lapsr";     // countdown visible from any tab
   if(left<=0){ if(phase==="work") completeWork(); else { endTimer(); beep(1); notify("Break over — back to it."); } } }
 
-// ===== chart: credits used vs steady pace, across the period =====
-let chart;
-function idealSeries(){ const days=periodDays(state.cfg,new Date(),state.startedAt); return [{x:0,y:0},{x:days,y:state.cfg.budget}]; }
-function actualSeries(){ const {start}=periodBounds(state.cfg,new Date(),state.startedAt); return state.marks.map(m=>({x:+((m.t-start.getTime())/86400000).toFixed(3), y:m.spent})); }
-function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
-function initChart(){ const days=periodDays(state.cfg,new Date(),state.startedAt);
-  const accent=cssVar("--accent"), dim=cssVar("--dim"), line=cssVar("--line"), txt=cssVar("--txt");
-  chart=new Chart($("chart"),{ type:"line",
-    data:{datasets:[
-      {label:"Steady pace",data:idealSeries(),borderColor:line,borderDash:[5,5],pointRadius:0,borderWidth:1},
-      {label:"You",data:actualSeries(),borderColor:accent,backgroundColor:"transparent",fill:false,stepped:true,pointRadius:2,pointBackgroundColor:accent,borderWidth:1.5}
-    ]},
-    options:{responsive:true,animation:false,
-      scales:{ x:{type:"linear",min:0,max:days,title:{display:true,text:"days into period",color:dim},ticks:{color:dim},grid:{color:line}},
-               y:{min:0,suggestedMax:state.cfg.budget,title:{display:true,text:"credits used",color:dim},ticks:{color:dim},grid:{color:line}} },
-      plugins:{legend:{labels:{color:txt,font:{family:"JetBrains Mono"},boxWidth:18}}} } }); }
-function refreshChart(){ const days=periodDays(state.cfg,new Date(),state.startedAt);
-  chart.data.datasets[0].data=idealSeries(); chart.data.datasets[1].data=actualSeries();
-  chart.options.scales.x.max=days; chart.options.scales.y.suggestedMax=state.cfg.budget; chart.update(); }
+// ===== chart: credits used vs steady pace — inline SVG, no library =====
+function refreshChart(){
+  const svg=$("chart"), days=periodDays(state.cfg,new Date(),state.startedAt||Date.now()), budget=state.cfg.budget||1;
+  const W=600,H=220,P={l:36,r:12,t:14,b:26}, iw=W-P.l-P.r, ih=H-P.t-P.b;
+  const X=d=>P.l+Math.max(0,Math.min(1,days? d/days:0))*iw, Y=c=>P.t+ih-Math.max(0,Math.min(1,c/budget))*ih;
+  const {start}=periodBounds(state.cfg,new Date(),state.startedAt||Date.now());
+  const nowD=state.startedAt? Math.min(days,(Date.now()-start.getTime())/86400000) : 0;
+  let path=`M${X(0)},${Y(0)}`, dots="";
+  for(const m of state.marks){ const x=X((m.t-start.getTime())/86400000), y=Y(m.spent);
+    path+=` H${x} V${y}`; dots+=`<circle cx="${x}" cy="${y}" r="2.5"/>`; }
+  path+=` H${X(nowD)}`;                                            // hold the last step to "now"
+  const grid=[.25,.5,.75].map(f=>`<line x1="${P.l}" x2="${W-P.r}" y1="${Y(budget*f)}" y2="${Y(budget*f)}"/>`).join("");
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  svg.innerHTML=
+    `<g style="stroke:var(--line)">${grid}<line x1="${P.l}" x2="${W-P.r}" y1="${Y(0)}" y2="${Y(0)}"/><line x1="${P.l}" x2="${P.l}" y1="${P.t}" y2="${Y(0)}"/></g>`+
+    `<line x1="${X(0)}" y1="${Y(0)}" x2="${X(days)}" y2="${Y(budget)}" style="stroke:var(--dim);stroke-dasharray:5 5"/>`+
+    `<path d="${path}" style="stroke:var(--accent);stroke-width:1.5;fill:none"/>`+
+    `<g style="fill:var(--accent)">${dots}</g>`+
+    `<g style="fill:var(--dim);font:10px 'JetBrains Mono',monospace">`+
+      `<text x="${W-P.r}" y="${P.t-3}" text-anchor="end">⋯ steady · — you</text>`+
+      `<text x="${P.l-7}" y="${Y(budget)+4}" text-anchor="end">${budget}</text><text x="${P.l-7}" y="${Y(0)+4}" text-anchor="end">0</text>`+
+      `<text x="${P.l}" y="${H-8}">0</text><text x="${W-P.r}" y="${H-8}" text-anchor="end">${days}d</text>`+
+      `<text x="${(P.l+W-P.r)/2}" y="${H-8}" text-anchor="middle">days into period</text>`+
+    `</g>`;
+}
 
 // ===== completed log (github-commit style) =====
 function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -787,15 +799,16 @@ $("log").addEventListener("click", e=>{                                  // clic
   const d=prompt("Note for this session (optional):", entry.desc||""); if(d===null) return;
   entry.desc=d.trim(); commit(); _logSig=""; renderLog(); });
 $("startBlock").onclick=startBlock; $("cancelBlock").onclick=cancelBlock;
+$("intent").addEventListener("keydown",e=>{ if(e.key==="Enter" && !$("startBlock").disabled) startBlock(); });
 $("export").onclick=exportData;
 $("import").onclick=()=>$("importFile").click();
 $("importFile").onchange=(e)=>{ if(e.target.files[0]) importData(e.target.files[0]); e.target.value=""; };
 
 // ===== boot =====
-fillSettings(); initChart(); render(); resumeSession(); setInterval(render,1000);
+fillSettings(); refreshChart(); render(); resumeSession(); setInterval(render,1000);
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){
   if(phase===null){ state=loadLocal(); fillSettings(); refreshChart(); render(); resumeSession(); }  // reload-after-sleep: restore running session
-  else render();                                                                                      // still ticking: tick() self-corrects from timestamp
+  else { render(); lockScreen(); }                                    // still ticking: tick() self-corrects; wake lock auto-released on hide, re-grab it
 }});
 if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("SW:",e));
 
