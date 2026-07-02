@@ -605,7 +605,7 @@ function tick(){ const left=phaseEndTs-Date.now(), t=Math.max(0,Math.floor(left/
 // × marks are windows that closed unclaimed, the ring is "you, now" with a live delta.
 function refreshChart(){
   const svg=$("chart"), days=periodDays(state.cfg,new Date(),state.startedAt||Date.now()), budget=state.cfg.budget||1;
-  const W=600,H=220,P={l:36,r:12,t:14,b:26}, iw=W-P.l-P.r, ih=H-P.t-P.b, DAY=86400000;
+  const W=600,H=220,P={l:36,r:12,t:26,b:26}, iw=W-P.l-P.r, ih=H-P.t-P.b, DAY=86400000;
   const X=d=>P.l+Math.max(0,Math.min(1,days? d/days:0))*iw, Y=c=>P.t+ih-Math.max(0,Math.min(1,c/budget))*ih;
   const {start}=periodBounds(state.cfg,new Date(),state.startedAt||Date.now());
   const t0=start.getTime(), nowD=state.startedAt? Math.min(days,(Date.now()-t0)/DAY) : 0;
@@ -674,7 +674,7 @@ function refreshChart(){
     `<g style="fill:var(--accent)">${dots}</g>`+
     nowG+
     `<g style="fill:var(--dim);font:10px 'JetBrains Mono',monospace">`+
-      `<text x="${W-P.r}" y="${P.t-3}" text-anchor="end">⋯ steady · — you${lost?" · × lost":""}</text>`+
+      `<text x="${W-P.r}" y="${P.t-9}" text-anchor="end">⋯ steady · — you${lost?" · × lost":""}</text>`+
       `<text x="${P.l-7}" y="${Y(budget)+4}" text-anchor="end">${budget}</text><text x="${P.l-7}" y="${Y(0)+4}" text-anchor="end">0</text>`+
       `<text x="${P.l}" y="${H-8}">0</text><text x="${W-P.r}" y="${H-8}" text-anchor="end">${days}d</text>`+
       `<text x="${(P.l+W-P.r)/2}" y="${H-8}" text-anchor="middle">days into period</text>`+
