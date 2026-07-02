@@ -601,25 +601,80 @@ function tick(){ const left=phaseEndTs-Date.now(), t=Math.max(0,Math.floor(left/
   if(left<=0){ if(phase==="work") completeWork(); else { endTimer(); beep(1); notify("Break over — back to it."); } } }
 
 // ===== chart: credits used vs steady pace — inline SVG, no library =====
+// Reads as a race against the pace line: tinted bands show ahead (accent) / behind (danger),
+// × marks are windows that closed unclaimed, the ring is "you, now" with a live delta.
 function refreshChart(){
   const svg=$("chart"), days=periodDays(state.cfg,new Date(),state.startedAt||Date.now()), budget=state.cfg.budget||1;
-  const W=600,H=220,P={l:36,r:12,t:14,b:26}, iw=W-P.l-P.r, ih=H-P.t-P.b;
+  const W=600,H=220,P={l:36,r:12,t:14,b:26}, iw=W-P.l-P.r, ih=H-P.t-P.b, DAY=86400000;
   const X=d=>P.l+Math.max(0,Math.min(1,days? d/days:0))*iw, Y=c=>P.t+ih-Math.max(0,Math.min(1,c/budget))*ih;
   const {start}=periodBounds(state.cfg,new Date(),state.startedAt||Date.now());
-  const nowD=state.startedAt? Math.min(days,(Date.now()-start.getTime())/86400000) : 0;
+  const t0=start.getTime(), nowD=state.startedAt? Math.min(days,(Date.now()-t0)/DAY) : 0;
+  const marks=state.marks.map(m=>({d:(m.t-t0)/DAY, spent:m.spent, t:m.t, intent:m.intent}));
+  const you=d=>{ let y=0; for(const m of marks){ if(m.d<=d) y=m.spent; else break; } return y; };
+  const pace=d=>budget*d/days;
+
+  // ahead/behind bands between the two lines, split where they cross
+  let bands="";
+  if(nowD>0){
+    const pts=[]; for(let i=0;i<=200;i++){ const d=nowD*i/200; pts.push([d,you(d),pace(d)]); }
+    let run=null, sign=0;
+    const flush=()=>{ if(!run||run.length<2||!sign) return;
+      const top=run.map(p=>`${X(p[0])},${Y(p[1])}`).join(" ");
+      const bot=run.slice().reverse().map(p=>`${X(p[0])},${Y(p[2])}`).join(" ");
+      bands+=`<polygon points="${top} ${bot}" style="fill:${sign>0?"var(--accent)":"var(--danger)"};opacity:.10"/>`; };
+    for(const p of pts){ const s=Math.sign(p[1]-p[2])||sign;
+      if(s!==sign){ flush(); run=run&&run.length? [run[run.length-1]]:[]; sign=s; }
+      (run=run||[]).push(p); }
+    flush();
+  }
+
+  // forfeited windows — reconstructed from marks/rest days, an × where each unclaimed window closed
+  let lost="";
+  if(state.startedAt){
+    const allot=dailyAllot(state);
+    let probe=new Date(t0);
+    for(let i=0;i<32;i++){
+      const {open,close}=dayWindow(state.cfg, probe);
+      if(close.getTime()>Date.now()) break;
+      if(open.getTime()>=t0 && !isRestDay(state,open)){
+        const n=allot-claimedInWindow(state,open,close);
+        if(n>0.01) lost+=`<text x="${X((close.getTime()-t0)/DAY)}" y="${Y(0)-5}" text-anchor="middle">×<title>${escapeHtml("window closed unclaimed — "+(n<1?n.toFixed(2):Math.round(n))+" credit share forfeited")}</title></text>`;
+      }
+      probe=new Date(open.getTime()+DAY);
+    }
+  }
+
   let path=`M${X(0)},${Y(0)}`, dots="";
-  for(const m of state.marks){ const x=X((m.t-start.getTime())/86400000), y=Y(m.spent);
-    path+=` H${x} V${y}`; dots+=`<circle cx="${x}" cy="${y}" r="2.5"/>`; }
+  for(const m of marks){ const x=X(m.d), y=Y(m.spent);
+    path+=` H${x} V${y}`;
+    dots+=`<circle cx="${x}" cy="${y}" r="2.5"><title>${escapeHtml(fmtClock(new Date(m.t))+(m.intent?" · "+m.intent:""))}</title></circle>`; }
   path+=` H${X(nowD)}`;                                            // hold the last step to "now"
+
+  // now marker: hairline + ring on your line + live delta vs pace
+  let nowG="";
+  if(nowD>0){
+    const yy=you(nowD), pp=pace(nowD), diff=yy-pp, xN=X(nowD);
+    const lab=Math.abs(diff)<0.5? "on pace" : diff>0? "+"+(Math.round(diff*10)/10)+" ahead" : (Math.round(-diff*10)/10)+" behind";
+    const col=Math.abs(diff)<0.5? "var(--dim)" : diff>0? "var(--accent)" : "var(--danger)";
+    const tx=Math.max(P.l+34,Math.min(W-P.r-34,xN));
+    nowG=`<line x1="${xN}" x2="${xN}" y1="${Y(Math.max(yy,pp))-6}" y2="${Y(0)}" style="stroke:var(--dim);stroke-dasharray:2 3;opacity:.6"/>`+
+      `<circle cx="${xN}" cy="${Y(yy)}" r="3.5" style="fill:var(--bg);stroke:var(--accent);stroke-width:2"/>`+
+      `<text x="${tx}" y="${Y(Math.max(yy,pp))-12}" text-anchor="middle" style="fill:${col};font:10px 'JetBrains Mono',monospace">${lab}</text>`;
+  }
+
   const grid=[.25,.5,.75].map(f=>`<line x1="${P.l}" x2="${W-P.r}" y1="${Y(budget*f)}" y2="${Y(budget*f)}"/>`).join("");
+  let ticks=""; for(let d=1;d<days;d++) ticks+=`<line x1="${X(d)}" x2="${X(d)}" y1="${Y(0)}" y2="${Y(0)-4}"/>`;
   svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
   svg.innerHTML=
-    `<g style="stroke:var(--line)">${grid}<line x1="${P.l}" x2="${W-P.r}" y1="${Y(0)}" y2="${Y(0)}"/><line x1="${P.l}" x2="${P.l}" y1="${P.t}" y2="${Y(0)}"/></g>`+
+    `<g style="stroke:var(--line)">${grid}${ticks}<line x1="${P.l}" x2="${W-P.r}" y1="${Y(0)}" y2="${Y(0)}"/><line x1="${P.l}" x2="${P.l}" y1="${P.t}" y2="${Y(0)}"/></g>`+
+    bands+
     `<line x1="${X(0)}" y1="${Y(0)}" x2="${X(days)}" y2="${Y(budget)}" style="stroke:var(--dim);stroke-dasharray:5 5"/>`+
     `<path d="${path}" style="stroke:var(--accent);stroke-width:1.5;fill:none"/>`+
+    `<g style="fill:var(--danger);opacity:.85;font:10px 'JetBrains Mono',monospace">${lost}</g>`+
     `<g style="fill:var(--accent)">${dots}</g>`+
+    nowG+
     `<g style="fill:var(--dim);font:10px 'JetBrains Mono',monospace">`+
-      `<text x="${W-P.r}" y="${P.t-3}" text-anchor="end">⋯ steady · — you</text>`+
+      `<text x="${W-P.r}" y="${P.t-3}" text-anchor="end">⋯ steady · — you${lost?" · × lost":""}</text>`+
       `<text x="${P.l-7}" y="${Y(budget)+4}" text-anchor="end">${budget}</text><text x="${P.l-7}" y="${Y(0)+4}" text-anchor="end">0</text>`+
       `<text x="${P.l}" y="${H-8}">0</text><text x="${W-P.r}" y="${H-8}" text-anchor="end">${days}d</text>`+
       `<text x="${(P.l+W-P.r)/2}" y="${H-8}" text-anchor="middle">days into period</text>`+
