@@ -442,10 +442,12 @@ function canStart(s, now){
 function settleWindows(s, now){
   const perKr=s.cfg.budget? s.cfg.stake/s.cfg.budget : 0, allot=dailyAllot(s);
   const start=periodBounds(s.cfg, now, s.startedAt).start.getTime();
+  const live=(s.session&&s.session.phase==="work")? (s.session.t0||0) : 0;  // a session in progress hasn't pushed its mark yet
   let probe=new Date(Math.max(s.settledThrough||0, start)), changed=false;
   for(let i=0;i<400;i++){                                        // ponytail: linear day scan, period ≤ 31 days
     const {open,close}=dayWindow(s.cfg, probe);
     if(close.getTime()>now.getTime()) break;                    // window still open or in the future
+    if(live>=open.getTime() && live<close.getTime()) break;     // a session started in this window is still running — defer forfeit until it completes and claims
     if(close.getTime()>(s.settledThrough||0) && open.getTime()>=start){
       if(isRestDay(s, open)){                                    // pre-committed day off: set the allotment aside, never forfeit
         s.restedCredits=(s.restedCredits||0)+allot;
@@ -541,6 +543,7 @@ const BASE_TITLE=document.title;
 // ---- phase-end signals: a focus timer that ends silently in another tab is broken ----
 let audioCtx=null;
 function beep(n){ try{ audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+  audioCtx.resume&&audioCtx.resume();                          // unlock/keep running — resume must ride the start gesture (beep(0)) or later beeps stay silent
   const t=audioCtx.currentTime;
   for(let i=0;i<n;i++){ const o=audioCtx.createOscillator(), g=audioCtx.createGain();
     o.connect(g); g.connect(audioCtx.destination); o.frequency.value=880;
@@ -600,35 +603,21 @@ function tick(){ const left=phaseEndTs-Date.now(), t=Math.max(0,Math.floor(left/
   document.title=(phase==="break"?"break ":"")+mmss+" · Lapsr";     // countdown visible from any tab
   if(left<=0){ if(phase==="work") completeWork(); else { endTimer(); beep(1); notify("Break over — back to it."); } } }
 
-// ===== chart: credits used vs steady pace — inline SVG, no library =====
-// Reads as a race against the pace line: tinted bands show ahead (accent) / behind (danger),
-// × marks are windows that closed unclaimed, the ring is "you, now" with a live delta.
+// ===== chart: credits used vs steady pace — inline SVG, zen redesign =====
+// One glance: ahead or behind, by how much. Hero delta up top, gradient area under your line,
+// pace demoted to a dim hairline, forfeited windows as quiet baseline ticks. Mobile-first viewBox.
 function refreshChart(){
-  const svg=$("chart"), days=periodDays(state.cfg,new Date(),state.startedAt||Date.now()), budget=state.cfg.budget||1;
-  const W=600,H=220,P={l:36,r:12,t:26,b:26}, iw=W-P.l-P.r, ih=H-P.t-P.b, DAY=86400000;
-  const X=d=>P.l+Math.max(0,Math.min(1,days? d/days:0))*iw, Y=c=>P.t+ih-Math.max(0,Math.min(1,c/budget))*ih;
+  const svg=$("chart"), days=periodDays(state.cfg,new Date(),state.startedAt||Date.now())||1, budget=state.cfg.budget||1;
+  const W=360,H=200,P={l:16,r:16,t:70,b:22}, iw=W-P.l-P.r, ih=H-P.t-P.b, DAY=86400000;
+  const cl=v=>Math.max(0,Math.min(1,v));
+  const X=d=>P.l+cl(d/days)*iw, Y=c=>P.t+ih-cl(c/budget)*ih;
   const {start}=periodBounds(state.cfg,new Date(),state.startedAt||Date.now());
   const t0=start.getTime(), nowD=state.startedAt? Math.min(days,(Date.now()-t0)/DAY) : 0;
   const marks=state.marks.map(m=>({d:(m.t-t0)/DAY, spent:m.spent, t:m.t, intent:m.intent}));
   const you=d=>{ let y=0; for(const m of marks){ if(m.d<=d) y=m.spent; else break; } return y; };
   const pace=d=>budget*d/days;
 
-  // ahead/behind bands between the two lines, split where they cross
-  let bands="";
-  if(nowD>0){
-    const pts=[]; for(let i=0;i<=200;i++){ const d=nowD*i/200; pts.push([d,you(d),pace(d)]); }
-    let run=null, sign=0;
-    const flush=()=>{ if(!run||run.length<2||!sign) return;
-      const top=run.map(p=>`${X(p[0])},${Y(p[1])}`).join(" ");
-      const bot=run.slice().reverse().map(p=>`${X(p[0])},${Y(p[2])}`).join(" ");
-      bands+=`<polygon points="${top} ${bot}" style="fill:${sign>0?"var(--accent)":"var(--danger)"};opacity:.10"/>`; };
-    for(const p of pts){ const s=Math.sign(p[1]-p[2])||sign;
-      if(s!==sign){ flush(); run=run&&run.length? [run[run.length-1]]:[]; sign=s; }
-      (run=run||[]).push(p); }
-    flush();
-  }
-
-  // forfeited windows — reconstructed from marks/rest days, an × where each unclaimed window closed
+  // forfeited windows — reconstructed from marks/rest days, a quiet baseline tick where a window closed unclaimed
   let lost="";
   if(state.startedAt){
     const allot=dailyAllot(state);
@@ -638,47 +627,49 @@ function refreshChart(){
       if(close.getTime()>Date.now()) break;
       if(open.getTime()>=t0 && !isRestDay(state,open)){
         const n=allot-claimedInWindow(state,open,close);
-        if(n>0.01) lost+=`<text x="${X((close.getTime()-t0)/DAY)}" y="${Y(0)-5}" text-anchor="middle">×<title>${escapeHtml("window closed unclaimed — "+(n<1?n.toFixed(2):Math.round(n))+" credit share forfeited")}</title></text>`;
+        if(n>0.01) lost+=`<circle cx="${X((close.getTime()-t0)/DAY)}" cy="${Y(0)}" r="2.2" style="fill:none;stroke:var(--dim);stroke-width:1;opacity:.55"><title>${escapeHtml("window closed unclaimed — "+(n<1?n.toFixed(2):Math.round(n))+" credit share forfeited")}</title></circle>`;
       }
       probe=new Date(open.getTime()+DAY);
     }
   }
 
-  let path=`M${X(0)},${Y(0)}`, dots="";
-  for(const m of marks){ const x=X(m.d), y=Y(m.spent);
-    path+=` H${x} V${y}`;
-    dots+=`<circle cx="${x}" cy="${y}" r="2.5"><title>${escapeHtml(fmtClock(new Date(m.t))+(m.intent?" · "+m.intent:""))}</title></circle>`; }
-  path+=` H${X(nowD)}`;                                            // hold the last step to "now"
+  // your progress: a step line, held flat to "now", with a soft gradient area beneath
+  let line=`M${X(0)},${Y(0)}`, dots="";
+  for(const m of marks){ const x=X(m.d), y=Y(m.spent); line+=` H${x} V${y}`;
+    dots+=`<circle cx="${x}" cy="${y}" r="1.8" opacity=".5"><title>${escapeHtml(fmtClock(new Date(m.t))+(m.intent?" · "+m.intent:""))}</title></circle>`; }
+  line+=` H${X(nowD)}`;
+  const area=`${line} V${Y(0)} H${X(0)} Z`;
 
-  // now marker: hairline + ring on your line + live delta vs pace
+  // now marker: soft halo + dot sitting on your line
   let nowG="";
-  if(nowD>0){
-    const yy=you(nowD), pp=pace(nowD), diff=yy-pp, xN=X(nowD);
-    const lab=Math.abs(diff)<0.5? "on pace" : diff>0? "+"+(Math.round(diff*10)/10)+" ahead" : (Math.round(-diff*10)/10)+" behind";
-    const col=Math.abs(diff)<0.5? "var(--dim)" : diff>0? "var(--accent)" : "var(--danger)";
-    const tx=Math.max(P.l+34,Math.min(W-P.r-34,xN));
-    nowG=`<line x1="${xN}" x2="${xN}" y1="${Y(Math.max(yy,pp))-6}" y2="${Y(0)}" style="stroke:var(--dim);stroke-dasharray:2 3;opacity:.6"/>`+
-      `<circle cx="${xN}" cy="${Y(yy)}" r="3.5" style="fill:var(--bg);stroke:var(--accent);stroke-width:2"/>`+
-      `<text x="${tx}" y="${Y(Math.max(yy,pp))-12}" text-anchor="middle" style="fill:${col};font:10px 'JetBrains Mono',monospace">${lab}</text>`;
+  if(nowD>0){ const xN=X(nowD), yN=Y(you(nowD));
+    nowG=`<circle cx="${xN}" cy="${yN}" r="7" style="fill:var(--accent);opacity:.14"/>`+
+      `<circle cx="${xN}" cy="${yN}" r="3.4" style="fill:var(--accent)"/>`+
+      `<circle cx="${xN}" cy="${yN}" r="1.2" style="fill:var(--bg)"/>`;
   }
 
-  const grid=[.25,.5,.75].map(f=>`<line x1="${P.l}" x2="${W-P.r}" y1="${Y(budget*f)}" y2="${Y(budget*f)}"/>`).join("");
-  let ticks=""; for(let d=1;d<days;d++) ticks+=`<line x1="${X(d)}" x2="${X(d)}" y1="${Y(0)}" y2="${Y(0)-4}"/>`;
+  // hero delta — the one number, top-left
+  let big="—", cap="no sessions yet", col="var(--dim)";
+  if(nowD>0){ const diff=you(nowD)-pace(nowD);
+    if(Math.abs(diff)<0.5){ big="on pace"; cap="holding steady"; col="var(--dim)"; }
+    else if(diff>0){ big="+"+(Math.round(diff*10)/10); cap="credits ahead of pace"; col="var(--accent)"; }
+    else { big="−"+(Math.round(-diff*10)/10); cap="credits behind pace"; col="var(--danger)"; }
+  }
+
   svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
   svg.innerHTML=
-    `<g style="stroke:var(--line)">${grid}${ticks}<line x1="${P.l}" x2="${W-P.r}" y1="${Y(0)}" y2="${Y(0)}"/><line x1="${P.l}" x2="${P.l}" y1="${P.t}" y2="${Y(0)}"/></g>`+
-    bands+
-    `<line x1="${X(0)}" y1="${Y(0)}" x2="${X(days)}" y2="${Y(budget)}" style="stroke:var(--dim);stroke-dasharray:5 5"/>`+
-    `<path d="${path}" style="stroke:var(--accent);stroke-width:1.5;fill:none"/>`+
-    `<g style="fill:var(--danger);opacity:.85;font:10px 'JetBrains Mono',monospace">${lost}</g>`+
+    `<defs><linearGradient id="cgFill" x1="0" y1="0" x2="0" y2="1">`+
+      `<stop offset="0" style="stop-color:var(--accent);stop-opacity:.20"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/>`+
+    `</linearGradient></defs>`+
+    `<text x="${P.l}" y="34" style="fill:${col};font:600 30px 'JetBrains Mono',ui-monospace,monospace">${big}</text>`+
+    `<text x="${P.l}" y="52" style="fill:var(--dim);font:11px 'Inter',sans-serif;letter-spacing:.03em">${cap}</text>`+
+    `<line x1="${X(0)}" y1="${Y(0)}" x2="${W-P.r}" y2="${Y(0)}" style="stroke:var(--line);opacity:.6"/>`+
+    `<line x1="${X(0)}" y1="${Y(0)}" x2="${X(days)}" y2="${Y(budget)}" style="stroke:var(--dim);stroke-width:1;stroke-dasharray:2 4;opacity:.55"/>`+
+    `<path d="${area}" style="fill:url(#cgFill);stroke:none"/>`+
+    `<path d="${line}" style="fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round"/>`+
+    `<g>${lost}</g>`+
     `<g style="fill:var(--accent)">${dots}</g>`+
-    nowG+
-    `<g style="fill:var(--dim);font:10px 'JetBrains Mono',monospace">`+
-      `<text x="${W-P.r}" y="${P.t-9}" text-anchor="end">⋯ steady · — you${lost?" · × lost":""}</text>`+
-      `<text x="${P.l-7}" y="${Y(budget)+4}" text-anchor="end">${budget}</text><text x="${P.l-7}" y="${Y(0)+4}" text-anchor="end">0</text>`+
-      `<text x="${P.l}" y="${H-8}">0</text><text x="${W-P.r}" y="${H-8}" text-anchor="end">${days}d</text>`+
-      `<text x="${(P.l+W-P.r)/2}" y="${H-8}" text-anchor="middle">days into period</text>`+
-    `</g>`;
+    nowG;
 }
 
 // ===== completed log (github-commit style) =====
@@ -832,7 +823,7 @@ function planRestDay(){
   if(gate.trim()!=="EMERGENCY"){ alert("Not confirmed. Emergency days are for genuine emergencies only."); return; }
   const def=dayKey(Date.now()+86400000);                          // default = tomorrow
   const {end}=periodBounds(state.cfg,new Date(),state.startedAt);
-  const inp=$("restDate"); inp.min=def; inp.max=dayKey(end.getTime()-1); inp.value=def;
+  const inp=$("restDate"); inp.min=def; inp.max=dayKey(end.getTime()-1); inp.value="";  // no preset — else picking the default fires no change event
   try{ inp.showPicker(); }                                        // native calendar; min/max validate for free
   catch(e){ const v=prompt("Which future day? (YYYY-MM-DD) — locked the night before, so no waking up and opting out same-day.", def);
     if(v!==null) commitRestDay(v); }
@@ -916,12 +907,15 @@ if(new URLSearchParams(location.search).get("test")==="1"){
   const sr={cfg:cw, startedAt:new Date(2026,5,22,0,0).getTime(), spent:0, marks:[], wasted:0, forfeitedCredits:0, restedCredits:0, restDays:["2026-06-23"], settledThrough:0};
   settleWindows(sr, new Date(2026,5,23,15,0));   // Mon (22nd) forfeits, Tue (23rd) is a rest day → set aside, no forfeit
   console.assert(sr.forfeitedCredits===1 && Math.round(sr.wasted)===10 && sr.restedCredits===1, "rest day skips forfeit: 1 forfeited/10kr + 1 rested, got "+sr.forfeitedCredits+"/"+sr.wasted+"/"+sr.restedCredits);
-  // straddling session: started inside the window, finished after close → still counts for that day
-  const st={cfg:cw, startedAt:new Date(2026,5,22,0,0).getTime(), spent:1,
-    marks:[{t:new Date(2026,5,22,14,10).getTime(), t0:new Date(2026,5,22,13,30).getTime(), spent:1}],
+  // straddling session — LIVE order: window closes (14:00) while the session is still running, mark pushed only at completion (14:10)
+  const st={cfg:cw, startedAt:new Date(2026,5,22,0,0).getTime(), spent:0, marks:[],
+    session:{phase:"work", t0:new Date(2026,5,22,13,30).getTime()},   // in progress, started inside the window
     wasted:0, forfeitedCredits:0, settledThrough:0};
-  settleWindows(st, new Date(2026,5,22,15,0));
-  console.assert(st.forfeitedCredits===0 && st.wasted===0, "straddling session claims its start-day window — no forfeit, got "+st.forfeitedCredits);
+  settleWindows(st, new Date(2026,5,22,14,1));   // settle fires 1 min after close, before completion → must defer, NOT forfeit
+  console.assert(st.forfeitedCredits===0 && st.wasted===0 && !st.settledThrough, "in-progress straddling session defers forfeit, got "+st.forfeitedCredits+"/"+st.settledThrough);
+  st.session=null; st.spent=1; st.marks.push({t:new Date(2026,5,22,14,10).getTime(), t0:new Date(2026,5,22,13,30).getTime(), spent:1});  // completeWork
+  settleWindows(st, new Date(2026,5,22,15,0));   // now settle → mark exists, counts for its start-day window
+  console.assert(st.forfeitedCredits===0 && st.wasted===0, "completed straddling session claims its window — no forfeit, got "+st.forfeitedCredits);
   console.assert(creditsRemaining({cfg:cw,spent:0,forfeitedCredits:1,restedCredits:1})===5, "rested + forfeited credits both leave the remaining pool");
   console.log("Lapsr self-check passed");
 }
