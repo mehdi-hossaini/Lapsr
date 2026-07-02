@@ -100,7 +100,7 @@
   main{max-width:600px;margin:0 auto;padding:24px 32px 96px;display:flex;flex-direction:column;background:var(--bg)}
   .panel{padding:56px 4px;border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
   .panel:first-of-type{border-top:0;text-align:center}
-  @media(max-width:680px){ header{padding:56px 22px 12px} main{padding:16px 22px 132px} .panel{padding:48px 2px} }
+  @media(max-width:680px){ header{padding:56px 22px 12px} main{padding:16px 22px 88px} .panel{padding:48px 2px} }
   /* desktop: distinct layout — sticky status sidebar + card grid (mobile stays a single zen column) */
   @media(min-width:860px){
     header{max-width:1240px;flex-direction:row;align-items:baseline;text-align:left;padding:48px 48px 8px;gap:18px}
@@ -205,8 +205,8 @@
   .commit:hover .edit{opacity:1;color:var(--accent)}
   .daygroup .commit:last-child{border-left-color:transparent}
   .commit .meta{font-variant-numeric:tabular-nums}
-  .chkcell{justify-content:flex-end}
-  .chk{display:flex;align-items:center;gap:9px;cursor:pointer;color:var(--txt);font-size:13px;margin-top:auto;padding:11px 0}
+  .chkcell{grid-column:1/-1}                                  /* full-width row, not a cell wedged between inputs */
+  .chk{display:flex;align-items:center;gap:9px;cursor:pointer;color:var(--txt);font-size:13px;padding:2px 0 6px}
   .chk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex:none}
   /* ===== bottom sheets — native <dialog>, action-only; the page stays a scrollable billboard ===== */
   dialog.sheet{border:0;background:var(--panel);color:var(--txt);width:100%;max-width:600px;margin:0 auto;position:fixed;inset:auto 0 0 0;
@@ -219,11 +219,15 @@
   .sheet-x{display:flex;justify-content:flex-end;margin:0}
   .sheet-x .xbtn{background:none;border:0;color:var(--dim);font-size:17px;cursor:pointer;padding:4px 2px;line-height:1}
   .sheet-x .xbtn:hover{color:var(--accent)}
-  .sheetbar{position:fixed;left:0;right:0;bottom:calc(74px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:8px;z-index:49;pointer-events:none}
-  .sheetbar button{pointer-events:auto;background:var(--panel);color:var(--dim);border:1px solid var(--line);border-radius:999px;
-    padding:8px 16px;font-size:12px;letter-spacing:.06em;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:color .15s,border-color .15s}
-  .sheetbar button:hover{color:var(--accent);border-color:var(--accent)}
-  @media(min-width:860px){ .sheetbar{bottom:24px} }
+  .gear{position:fixed;top:calc(14px + env(safe-area-inset-top));right:16px;z-index:48;background:none;border:0;color:var(--dim);
+    font-size:20px;line-height:1;cursor:pointer;padding:8px;border-radius:50%;transition:color .15s,transform .2s}
+  .gear:hover{color:var(--accent);transform:rotate(30deg)}
+  .tabs{display:flex;gap:2px;margin:2px 0 24px;border-bottom:1px solid var(--line)}
+  .tab{background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);font:500 11px/1 'Inter',sans-serif;letter-spacing:.14em;text-transform:uppercase;padding:11px 14px;margin-bottom:-1px;cursor:pointer;transition:color .15s,border-color .15s}
+  .tab:hover{color:var(--txt)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .pane{display:none}
+  .pane.active{display:block}
   .commit .node{position:absolute;left:-5px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
   .commit .msg{flex:1;color:var(--txt);font-size:13px;word-break:break-word}
   .commit .msg .unnamed{color:var(--dim);font-style:italic}
@@ -242,7 +246,7 @@
   #primaryCta{display:block;width:100%;margin-top:28px;padding:15px 24px;font-size:15px;min-height:48px}
   @media(max-width:859px){
     #primaryCta{position:fixed;left:16px;right:16px;bottom:calc(12px + env(safe-area-inset-bottom));width:auto;margin:0;z-index:50;box-shadow:0 6px 22px rgba(0,0,0,.22)}
-    main{padding-bottom:108px}
+    main{padding-bottom:88px}
   }
 </style>
 </head>
@@ -251,6 +255,7 @@
   <h1><svg class="brandmark" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 11 a39 39 0 1 0 27 11"/></svg>Lapsr<span class="vh"> — free focus timer with expiring credits</span></h1>
   <span class="sub">spend the interval — or lose it</span>
 </header>
+<button id="settingsBtn" class="gear" type="button" aria-label="Settings — plan, emergency days, backup">⚙</button>
 <main>
   <noscript><p style="text-align:center">Lapsr needs JavaScript — it's a local-only focus timer; nothing runs on a server.</p></noscript>
   <!-- STATUS: period timer + credits + at-risk, all in one -->
@@ -322,39 +327,53 @@
   </section>
 
   <!-- PLAN — bottom sheet -->
-  <dialog id="planSheet" class="sheet">
+  <!-- SETTINGS — one bottom sheet, three tabs -->
+  <dialog id="sheet" class="sheet">
     <form method="dialog" class="sheet-x"><button class="xbtn" aria-label="Close">✕</button></form>
     <div class="grab" aria-hidden="true"></div>
-    <h2>Plan</h2>
-    <label for="s_goal">Goal this period</label>
-    <input id="s_goal" placeholder="e.g. ship the landing page" />
-    <div class="grid2">
-      <div><label>Period</label>
-        <select id="s_period"><option value="week">Weekly</option><option value="month">Monthly</option></select></div>
-      <div><label>Budget (credits / period)</label><input id="s_budget" type="number" min="1" max="500" /></div>
-      <div><label>Session length (minutes)</label><input id="s_block" type="number" min="1" max="120" /></div>
-      <div><label>Break length (minutes)</label><input id="s_brk" type="number" min="1" max="40" /></div>
-      <div class="chkcell"><label class="chk"><input id="s_breakon" type="checkbox" /><span>Auto-start a break after each session</span></label></div>
-      <div><label>Stake for the period (kr)</label><input id="s_stake" type="number" min="0" step="10" /></div>
-      <div><label>Daily window start</label><input id="s_winstart" type="time" /></div>
-      <div><label>Daily window length (hours)</label><input id="s_winhours" type="number" min="1" max="24" step="0.5" /></div>
-      <div><label>Emergency days / period</label><input id="s_restbudget" type="number" min="0" max="99" /></div>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-tab="plan">Plan</button>
+      <button type="button" class="tab" role="tab" data-tab="em">Emergency</button>
+      <button type="button" class="tab" role="tab" data-tab="backup">Backup</button>
     </div>
-    <div class="actions"><button id="save" class="primary">Save plan</button></div>
-    <div class="explain" id="explain"></div>
-  </dialog>
 
-  <!-- BACKUP / TRANSFER — bottom sheet -->
-  <dialog id="backupSheet" class="sheet">
-    <form method="dialog" class="sheet-x"><button class="xbtn" aria-label="Close">✕</button></form>
-    <div class="grab" aria-hidden="true"></div>
-    <h2>Backup &amp; transfer</h2>
-    <div class="actions">
-      <button id="export" class="ghost">Export file</button>
-      <button id="import" class="ghost">Import file</button>
-      <input id="importFile" type="file" accept="application/json,.json" hidden />
+    <div class="pane" data-pane="plan">
+      <label for="s_goal">Goal this period</label>
+      <input id="s_goal" placeholder="e.g. ship the landing page" />
+      <div class="grid2">
+        <div><label>Period</label>
+          <select id="s_period"><option value="week">Weekly</option><option value="month">Monthly</option></select></div>
+        <div><label>Budget (credits / period)</label><input id="s_budget" type="number" min="1" max="500" /></div>
+        <div><label>Session length (minutes)</label><input id="s_block" type="number" min="1" max="120" /></div>
+        <div><label>Break length (minutes)</label><input id="s_brk" type="number" min="1" max="40" /></div>
+        <div class="chkcell"><label class="chk"><input id="s_breakon" type="checkbox" /><span>Auto-start a break after each session</span></label></div>
+        <div><label>Stake for the period (kr)</label><input id="s_stake" type="number" min="0" step="10" /></div>
+        <div><label>Daily window start</label><input id="s_winstart" type="time" /></div>
+        <div><label>Daily window length (hours)</label><input id="s_winhours" type="number" min="1" max="24" step="0.5" /></div>
+        <div><label>Emergency days / period</label><input id="s_restbudget" type="number" min="0" max="99" /></div>
+      </div>
+      <div class="actions"><button id="save" class="primary">Save plan</button></div>
+      <div class="explain" id="explain"></div>
     </div>
-    <div class="hint">Data lives only on this device. Export a JSON backup, or import it on another device to move your credits, plan, and ledger across.</div>
+
+    <div class="pane" data-pane="em">
+      <div class="embox">
+        <p class="emnote">Genuine emergencies only — illness, a family crisis. Not "I don't feel like it." Pre-commit the night before; that day's stake is shielded, nothing forfeited. They don't come back.</p>
+        <div class="emtokens" id="restCount" aria-label="emergency days remaining"></div>
+        <input id="restDate" type="date" class="vh" tabindex="-1" aria-hidden="true" />
+        <button id="planRest" class="embtn" type="button">Use an emergency day</button>
+        <div id="restList" class="emlist"></div>
+      </div>
+    </div>
+
+    <div class="pane" data-pane="backup">
+      <div class="actions">
+        <button id="export" class="ghost">Export file</button>
+        <button id="import" class="ghost">Import file</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden />
+      </div>
+      <div class="hint">Data lives only on this device. Export a JSON backup, or import it on another device to move your credits, plan, and ledger across.</div>
+    </div>
   </dialog>
 
   <!-- HOW IT WORKS — crawlable steps for search + first-time visitors -->
@@ -381,26 +400,6 @@
     </div>
   </section>
 
-  <!-- EMERGENCY DAYS — bottom sheet -->
-  <dialog id="emSheet" class="sheet">
-    <form method="dialog" class="sheet-x"><button class="xbtn" aria-label="Close">✕</button></form>
-    <div class="grab" aria-hidden="true"></div>
-    <div class="embox">
-      <h2>Emergency days</h2>
-      <p class="emnote">Genuine emergencies only — illness, a family crisis. Not "I don't feel like it." Pre-commit the night before; that day's stake is shielded, nothing forfeited. They don't come back.</p>
-      <div class="emtokens" id="restCount" aria-label="emergency days remaining"></div>
-      <input id="restDate" type="date" class="vh" tabindex="-1" aria-hidden="true" />
-      <button id="planRest" class="embtn" type="button">Use an emergency day</button>
-      <div id="restList" class="emlist"></div>
-    </div>
-  </dialog>
-
-  <!-- trigger pill for the action sheets -->
-  <nav class="sheetbar" aria-label="Actions">
-    <button type="button" data-sheet="planSheet">Plan</button>
-    <button type="button" data-sheet="emSheet">Emergency</button>
-    <button type="button" data-sheet="backupSheet">Backup</button>
-  </nav>
 </main>
 
 <script type="module">
@@ -846,7 +845,7 @@ function savePlan(){ const old=state.cfg.period, firstStart=!state.startedAt;
     state.settledThrough=state.startedAt; state.periodKey=periodBounds(state.cfg,new Date(),state.startedAt).key;
   }
   fillSettings(); commit(); refreshChart(); render();
-  const ps=$("planSheet"); if(ps.open) ps.close(); }                          // dismiss the sheet once the plan is saved
+  const ps=$("sheet"); if(ps.open) ps.close(); }                              // dismiss the sheet once the plan is saved
 // ===== rest days — pre-commit a future day off; locked the night before, no same-day opt-outs =====
 function commitRestDay(v){
   const m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec((v||"").trim());
@@ -902,9 +901,14 @@ function renderRest(){
 $("planRest").onclick=planRestDay;
 $("restList").addEventListener("click", e=>{ const p=e.target.closest("[data-k]"); if(p) unmarkRestDay(p.dataset.k); });
 $("save").onclick=savePlan;
-function openSheet(id){ fillSettings(); renderRest(); $(id).showModal(); }               // hydrate controls, then present the sheet
-document.querySelectorAll(".sheetbar button").forEach(b=> b.onclick=()=>openSheet(b.dataset.sheet));
-$("primaryCta").onclick=()=>{ if(!state.startedAt) openSheet("planSheet"); else startBlock(); };  // first run → set the plan in a sheet; once the clock runs it starts sessions
+function showTab(tab){                                                                     // one sheet, three tabs
+  document.querySelectorAll("#sheet .tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===tab));
+  document.querySelectorAll("#sheet .pane").forEach(p=>p.classList.toggle("active", p.dataset.pane===tab));
+}
+function openSheet(tab){ fillSettings(); renderRest(); showTab(tab||"plan"); const s=$("sheet"); if(!s.open) s.showModal(); }  // hydrate, select tab, present
+document.querySelectorAll("#sheet .tab").forEach(t=> t.onclick=()=>showTab(t.dataset.tab));
+$("settingsBtn").onclick=()=>openSheet("plan");
+$("primaryCta").onclick=()=>{ if(!state.startedAt) openSheet("plan"); else startBlock(); };  // first run → set the plan; once the clock runs it starts sessions
 $("log").addEventListener("click", e=>{                                  // click a completed session to add/edit its description (commit body)
   const row=e.target.closest("[data-t]"); if(!row) return;
   const entry=(state.log||[]).find(x=>x.t===+row.dataset.t); if(!entry) return;
