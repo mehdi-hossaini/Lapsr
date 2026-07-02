@@ -1,6 +1,6 @@
 // Lapsr service worker — app-shell cache for offline + installable PWA.
 // ponytail: bump CACHE on any shell change; cache-first for shell.
-const CACHE = "lapsr-v51";
+const CACHE = "lapsr-v52";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icon.svg",
   "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",

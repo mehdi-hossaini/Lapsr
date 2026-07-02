@@ -100,7 +100,7 @@
   main{max-width:600px;margin:0 auto;padding:24px 32px 96px;display:flex;flex-direction:column;background:var(--bg)}
   .panel{padding:56px 4px;border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
   .panel:first-of-type{border-top:0;text-align:center}
-  @media(max-width:680px){ header{padding:56px 22px 12px} main{padding:16px 22px 64px} .panel{padding:48px 2px} }
+  @media(max-width:680px){ header{padding:56px 22px 12px} main{padding:16px 22px 132px} .panel{padding:48px 2px} }
   /* desktop: distinct layout — sticky status sidebar + card grid (mobile stays a single zen column) */
   @media(min-width:860px){
     header{max-width:1240px;flex-direction:row;align-items:baseline;text-align:left;padding:48px 48px 8px;gap:18px}
@@ -129,17 +129,6 @@
   .risk{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;margin-top:28px;padding-top:26px;border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
   .risk .big{font:500 24px/1 'JetBrains Mono',ui-monospace,monospace;color:var(--accent)}
   .risk .lost{font-size:12px;color:var(--dim);letter-spacing:.02em}
-  /* emergency days: buried "advanced" toggle → a quiet panel matching the site idiom. friction lives in the flow, not the paint. */
-  .buried details{display:block}
-  .buried summary{list-style:none;cursor:pointer;user-select:none}
-  .buried summary::-webkit-details-marker{display:none}
-  .exp-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-  .exp-h{font-size:11px;text-transform:uppercase;letter-spacing:.25em;color:var(--dim);font-weight:500}
-  .exp-caret{color:var(--dim);font-size:11px;transition:transform .2s,color .2s}
-  .buried summary:hover .exp-h,.buried summary:hover .exp-caret{color:var(--txt)}
-  .buried details[open] .exp-caret{transform:rotate(90deg);color:var(--txt)}
-  .exp-sub{display:block;color:var(--dim);font-size:12px;margin-top:14px;letter-spacing:.04em;line-height:1.5}
-  .buried details[open] summary{margin-bottom:28px}
   .embox{width:340px;max-width:100%;margin:0}
   .emhead{font-size:11px;text-transform:uppercase;letter-spacing:.25em;color:var(--dim);font-weight:500}
   .emnote{font-size:11.5px;line-height:1.6;color:var(--dim);margin:12px 0 18px;letter-spacing:.02em}
@@ -202,11 +191,39 @@
   .goal{margin:0 0 20px;font-size:14px;color:var(--txt);line-height:1.5}
   .goal .lab{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.18em;color:var(--dim);margin-bottom:5px}
   .goal.empty{color:var(--dim);font-size:13px}
+  /* completed ledger — grouped by day; each day header is a money verdict, sessions nested on a timeline */
+  .daygroup{margin-bottom:26px}
+  .dayhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 10px}
+  .dayhead .dh-date{font-size:11px;text-transform:uppercase;letter-spacing:.18em;color:var(--dim);font-weight:500}
+  .dayhead .dh-tally{font:500 12px/1 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;display:flex;gap:10px;align-items:baseline}
+  .dh-tally .dh-n{color:var(--txt)}
+  .dh-tally .dh-lost{color:var(--danger)}
+  .dh-tally .dh-ok{color:var(--dim)}
   .commit{display:flex;align-items:baseline;gap:14px;padding:10px 0 10px 18px;border-left:2px solid var(--line);position:relative;cursor:pointer}
   .commit .desc{display:block;margin-top:4px;color:var(--dim);font-size:12px;line-height:1.5;word-break:break-word}
   .commit .edit{flex:none;color:var(--dim);font-size:12px;opacity:.45;transition:opacity .15s,color .15s}
   .commit:hover .edit{opacity:1;color:var(--accent)}
-  .commit:last-child{border-left-color:transparent}
+  .daygroup .commit:last-child{border-left-color:transparent}
+  .commit .meta{font-variant-numeric:tabular-nums}
+  .chkcell{justify-content:flex-end}
+  .chk{display:flex;align-items:center;gap:9px;cursor:pointer;color:var(--txt);font-size:13px;margin-top:auto;padding:11px 0}
+  .chk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex:none}
+  /* ===== bottom sheets — native <dialog>, action-only; the page stays a scrollable billboard ===== */
+  dialog.sheet{border:0;background:var(--panel);color:var(--txt);width:100%;max-width:600px;margin:0 auto;position:fixed;inset:auto 0 0 0;
+    padding:10px 22px calc(28px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;max-height:88vh;overflow:auto;box-shadow:0 -10px 34px rgba(0,0,0,.30)}
+  dialog.sheet::backdrop{background:rgba(0,0,0,.5);backdrop-filter:blur(2px)}
+  @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  dialog.sheet[open]{animation:sheetUp .22s cubic-bezier(.32,.72,0,1)}
+  dialog.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
+  dialog.sheet h2{margin-top:0}
+  .sheet-x{display:flex;justify-content:flex-end;margin:0}
+  .sheet-x .xbtn{background:none;border:0;color:var(--dim);font-size:17px;cursor:pointer;padding:4px 2px;line-height:1}
+  .sheet-x .xbtn:hover{color:var(--accent)}
+  .sheetbar{position:fixed;left:0;right:0;bottom:calc(74px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:8px;z-index:49;pointer-events:none}
+  .sheetbar button{pointer-events:auto;background:var(--panel);color:var(--dim);border:1px solid var(--line);border-radius:999px;
+    padding:8px 16px;font-size:12px;letter-spacing:.06em;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:color .15s,border-color .15s}
+  .sheetbar button:hover{color:var(--accent);border-color:var(--accent)}
+  @media(min-width:860px){ .sheetbar{bottom:24px} }
   .commit .node{position:absolute;left:-5px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
   .commit .msg{flex:1;color:var(--txt);font-size:13px;word-break:break-word}
   .commit .msg .unnamed{color:var(--dim);font-style:italic}
@@ -266,7 +283,7 @@
       <div><span class="l">at risk if period ended now</span><br><span class="big"><span id="atRisk">0</span> kr</span></div>
       <div class="lost">forfeited so far: <span id="wasted">0</span> kr</div>
     </div>
-    <button id="primaryCta" class="primary">Save plan</button>
+    <button id="primaryCta" class="primary">Set your plan</button>
   </section>
 
   <!-- FOCUS SESSION -->
@@ -287,7 +304,7 @@
         <div class="strack" id="stTrack"><div class="sfill" id="stFill"></div><div class="snow" id="stNow"></div></div>
         <div class="sends"><span id="stOpen">--:--</span><span class="smid" id="stMid">today’s window</span><span id="stClose">--:--</span></div>
       </div>
-      <div class="hint" id="blockHint" aria-live="polite">Finish a focus session to claim one credit, then take the break.</div>
+      <div class="hint" id="blockHint" aria-live="polite">Finish a focus session to claim one credit.</div>
     </div>
   </section>
 
@@ -304,8 +321,10 @@
     <div class="log" id="log"></div>
   </section>
 
-  <!-- PLAN -->
-  <section class="panel">
+  <!-- PLAN — bottom sheet -->
+  <dialog id="planSheet" class="sheet">
+    <form method="dialog" class="sheet-x"><button class="xbtn" aria-label="Close">✕</button></form>
+    <div class="grab" aria-hidden="true"></div>
     <h2>Plan</h2>
     <label for="s_goal">Goal this period</label>
     <input id="s_goal" placeholder="e.g. ship the landing page" />
@@ -315,6 +334,7 @@
       <div><label>Budget (credits / period)</label><input id="s_budget" type="number" min="1" max="500" /></div>
       <div><label>Session length (minutes)</label><input id="s_block" type="number" min="1" max="120" /></div>
       <div><label>Break length (minutes)</label><input id="s_brk" type="number" min="1" max="40" /></div>
+      <div class="chkcell"><label class="chk"><input id="s_breakon" type="checkbox" /><span>Auto-start a break after each session</span></label></div>
       <div><label>Stake for the period (kr)</label><input id="s_stake" type="number" min="0" step="10" /></div>
       <div><label>Daily window start</label><input id="s_winstart" type="time" /></div>
       <div><label>Daily window length (hours)</label><input id="s_winhours" type="number" min="1" max="24" step="0.5" /></div>
@@ -322,18 +342,20 @@
     </div>
     <div class="actions"><button id="save" class="primary">Save plan</button></div>
     <div class="explain" id="explain"></div>
-  </section>
+  </dialog>
 
-  <!-- BACKUP / TRANSFER -->
-  <section class="panel">
-    <h2>Backup & transfer</h2>
+  <!-- BACKUP / TRANSFER — bottom sheet -->
+  <dialog id="backupSheet" class="sheet">
+    <form method="dialog" class="sheet-x"><button class="xbtn" aria-label="Close">✕</button></form>
+    <div class="grab" aria-hidden="true"></div>
+    <h2>Backup &amp; transfer</h2>
     <div class="actions">
       <button id="export" class="ghost">Export file</button>
       <button id="import" class="ghost">Import file</button>
       <input id="importFile" type="file" accept="application/json,.json" hidden />
     </div>
     <div class="hint">Data lives only on this device. Export a JSON backup, or import it on another device to move your credits, plan, and ledger across.</div>
-  </section>
+  </dialog>
 
   <!-- HOW IT WORKS — crawlable steps for search + first-time visitors -->
   <section class="panel">
@@ -341,7 +363,7 @@
     <div class="explain">
       <ol>
         <li><b>Set a plan.</b> Pick a weekly or monthly budget of focus credits, a session length, and a money stake for the period.</li>
-        <li><b>Show up inside the daily window.</b> Credits are only claimable during your daily focus window — finish a focus session to claim one, then take the break.</li>
+        <li><b>Show up inside the daily window.</b> Credits are only claimable during your daily focus window — finish a focus session to claim one.</li>
         <li><b>Use it or lose it.</b> Any of the day's share you don't claim before the window closes is forfeited for good, and unused credits at period end forfeit their share of the stake.</li>
       </ol>
     </div>
@@ -359,23 +381,26 @@
     </div>
   </section>
 
-  <!-- ADVANCED — emergency days, collapsed by design; visible but understated -->
-  <section class="panel buried">
-    <details>
-      <summary>
-        <span class="exp-row"><span class="exp-h">Advanced</span><span class="exp-caret" aria-hidden="true">▸</span></span>
-        <span class="exp-sub">Emergency days — set aside a day's stake when life genuinely blocks one.</span>
-      </summary>
-      <div class="embox">
-        <div class="emhead">Emergency days</div>
-        <p class="emnote">Genuine emergencies only — illness, a family crisis. Not "I don't feel like it." Pre-commit the night before; that day's stake is shielded, nothing forfeited. They don't come back.</p>
-        <div class="emtokens" id="restCount" aria-label="emergency days remaining"></div>
-        <input id="restDate" type="date" class="vh" tabindex="-1" aria-hidden="true" />
-        <button id="planRest" class="embtn" type="button">Use an emergency day</button>
-        <div id="restList" class="emlist"></div>
-      </div>
-    </details>
-  </section>
+  <!-- EMERGENCY DAYS — bottom sheet -->
+  <dialog id="emSheet" class="sheet">
+    <form method="dialog" class="sheet-x"><button class="xbtn" aria-label="Close">✕</button></form>
+    <div class="grab" aria-hidden="true"></div>
+    <div class="embox">
+      <h2>Emergency days</h2>
+      <p class="emnote">Genuine emergencies only — illness, a family crisis. Not "I don't feel like it." Pre-commit the night before; that day's stake is shielded, nothing forfeited. They don't come back.</p>
+      <div class="emtokens" id="restCount" aria-label="emergency days remaining"></div>
+      <input id="restDate" type="date" class="vh" tabindex="-1" aria-hidden="true" />
+      <button id="planRest" class="embtn" type="button">Use an emergency day</button>
+      <div id="restList" class="emlist"></div>
+    </div>
+  </dialog>
+
+  <!-- trigger pill for the action sheets -->
+  <nav class="sheetbar" aria-label="Actions">
+    <button type="button" data-sheet="planSheet">Plan</button>
+    <button type="button" data-sheet="emSheet">Emergency</button>
+    <button type="button" data-sheet="backupSheet">Backup</button>
+  </nav>
 </main>
 
 <script type="module">
@@ -383,7 +408,7 @@
 // ponytail: local-only. Move between devices via JSON export/import (no backend, no accounts).
 // The period clock + forfeiture run on their own — no reset button, no pausing.
 const KEY="focuscredits.v2";
-const DEFAULTS={ period:"week", budget:20, block:50, brk:10, stake:200, windowStart:540, windowH:5, restBudget:2 }; // windowStart = minutes from midnight (09:00); windowH = daily claim-window length in hours; restBudget = pre-committed days off per period
+const DEFAULTS={ period:"week", budget:20, block:50, brk:10, breakOn:false, stake:200, windowStart:540, windowH:5, restBudget:2 }; // windowStart = minutes from midnight (09:00); windowH = daily claim-window length in hours; restBudget = pre-committed days off per period
 const WINDOW_H=5; // fallback daily-window length (hours) when cfg.windowH is absent — see DEFAULTS.windowH
 
 // ---- pure helpers (unit-tested via ?test=1) ----
@@ -561,7 +586,7 @@ function setBtns(){ const cs=canStart(state,new Date());
   $("phaseTag").textContent = phase==="work" ? "● focusing" : phase==="break" ? "○ recovering — walk, look away" : "";
   const cta=$("primaryCta");                                        // contextual primary: Save plan → Start session, hidden mid-session
   if(phase!==null){ cta.style.display="none"; }
-  else if(!state.startedAt){ cta.style.display=""; cta.textContent="Save plan"; cta.disabled=false; }
+  else if(!state.startedAt){ cta.style.display=""; cta.textContent="Set your plan"; cta.disabled=false; }
   else { cta.style.display=""; cta.textContent="Start session"; cta.disabled=!cs.ok; } }
 function startBlock(){
   const cs=canStart(state, new Date());
@@ -594,9 +619,10 @@ function completeWork(anchor){ const now=Date.now(); state.spent+=1; state.marks
   state.log.push({t:now,intent:curIntent}); if(state.log.length>200) state.log=state.log.slice(-200);  // cap history
   commit(); render(); refreshChart();
   $("intent").value=""; curIntent="";
-  beep(2); notify("Session done — credit claimed. Take the break.");
+  beep(2); notify(state.cfg.breakOn? "Session done — credit claimed. Take the break." : "Session done — credit claimed.");
   if(creditsRemaining(state)===0){ endTimer(); $("blockHint").textContent="All credits claimed. Rest until the period resets."; return; }
-  startBreak(anchor); }
+  if(state.cfg.breakOn){ startBreak(anchor); }                       // opt-in break; otherwise end and let the user start the next when ready
+  else { endTimer(); $("blockHint").textContent="Credit claimed. Start the next session when you're ready."; } }
 function tick(){ const left=phaseEndTs-Date.now(), t=Math.max(0,Math.floor(left/1000));
   const mmss=`${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`;
   $("blockTimer").textContent=mmss;
@@ -674,28 +700,46 @@ function refreshChart(){
 
 // ===== completed log (github-commit style) =====
 function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-function relTime(t){ const s=Math.floor((Date.now()-t)/1000);
-  if(s<60) return "just now"; if(s<3600) return Math.floor(s/60)+"m ago";
-  if(s<86400) return Math.floor(s/3600)+"h ago"; return Math.floor(s/86400)+"d ago"; }
-function shortId(t){ return (t%0xfffffff).toString(16).padStart(7,"0").slice(-7); }
-// streak = consecutive calendar days with ≥1 completed session, ending today (or yesterday, so it doesn't break before you've worked today)
-function streakDays(log){
-  const days=new Set((log||[]).map(e=>dayKey(e.t)));
-  let d=new Date(); if(!days.has(dayKey(d))) d=new Date(d.getTime()-86400000);
-  let n=0; while(days.has(dayKey(d))){ n++; d=new Date(d.getTime()-86400000); }
-  return n;
+// per-day forfeit (kr) for the calendar day `key` under the current cfg — 0 unless the window has closed unclaimed within this period
+function dayForfeitKr(key){
+  if(!state.startedAt) return 0;
+  const [y,m,d]=key.split("-").map(Number), probe=new Date(y,m-1,d,12,0,0);
+  const {open,close}=dayWindow(state.cfg, probe);
+  if(close.getTime()>Date.now() || isRestDay(state, open)) return 0;
+  const {start,end}=periodBounds(state.cfg, new Date(), state.startedAt);
+  if(open.getTime()<start.getTime() || open.getTime()>=end.getTime()) return 0;   // only the current period
+  const perKr=state.cfg.budget? state.cfg.stake/state.cfg.budget : 0;
+  const n=dailyAllot(state)-claimedInWindow(state, open, close);
+  return n>0.01? n*perKr : 0;
+}
+function dayLabel(key){
+  if(key===dayKey(Date.now())) return "Today";
+  if(key===dayKey(Date.now()-86400000)) return "Yesterday";
+  const [y,m,d]=key.split("-").map(Number);
+  return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
 }
 let _logSig="";
 function renderLog(){
   const log=state.log||[];
-  const sig=log.length+"|"+Math.floor(Date.now()/30000);   // ponytail: rebuild on change or ~every 30s to refresh relative times
+  const sig=log.length+"|"+Math.round(state.wasted)+"|"+Math.floor(Date.now()/30000);   // rebuild on new session, forfeit change, or ~30s
   if(sig===_logSig) return; _logSig=sig;
   const el=$("log");
   if(!log.length){ el.innerHTML='<div class="logempty">No completed sessions yet — finish one to log it here.</div>'; return; }
-  el.innerHTML = log.slice().reverse().map(e=>{
-    const title = e.intent ? escapeHtml(e.intent) : '<span class="unnamed">unnamed session</span>';
-    const desc = e.desc ? `<span class="desc">${escapeHtml(e.desc)}</span>` : '';
-    return `<div class="commit" data-t="${e.t}" title="Click to add a note"><span class="node"></span><span class="msg">${title}${desc}</span><span class="meta">${shortId(e.t)} · ${relTime(e.t)}</span><span class="edit" aria-hidden="true">✎</span></div>`;
+  // group by calendar day, newest first — each day reads as a money verdict, sessions nested beneath
+  const groups=new Map();
+  for(const e of log){ const k=dayKey(e.t); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(e); }
+  const keys=[...groups.keys()].sort().reverse();
+  el.innerHTML = keys.map(k=>{
+    const rows=groups.get(k).slice().reverse();
+    const lost=Math.round(dayForfeitKr(k));
+    const tally = `<span class="dh-n">${rows.length} claimed</span>` +
+      (lost>0 ? `<span class="dh-lost">−${lost} kr</span>` : `<span class="dh-ok">0 kr lost</span>`);
+    const items = rows.map(e=>{
+      const title = e.intent ? escapeHtml(e.intent) : '<span class="unnamed">unnamed session</span>';
+      const desc = e.desc ? `<span class="desc">${escapeHtml(e.desc)}</span>` : '';
+      return `<div class="commit" data-t="${e.t}" title="Click to add a note"><span class="node"></span><span class="msg">${title}${desc}</span><span class="meta">${fmtClock(new Date(e.t))}</span><span class="edit" aria-hidden="true">✎</span></div>`;
+    }).join("");
+    return `<div class="daygroup"><div class="dayhead"><span class="dh-date">${dayLabel(k)}</span><span class="dh-tally">${tally}</span></div>${items}</div>`;
   }).join("");
 }
 
@@ -752,8 +796,8 @@ function render(){
   const g=$("goalLine");
   if(state.goal){ g.className="goal"; g.innerHTML='<span class="lab">Goal · '+label.toLowerCase()+'</span>'+escapeHtml(state.goal); }
   else { g.className="goal empty"; g.textContent="No goal set — add one in Plan. Each completed session is a step toward it."; }
-  const stk=streakDays(state.log);
-  $("streak").textContent = stk>=2 ? stk+"-day streak" : "";
+  const perKr=state.cfg.budget? state.cfg.stake/state.cfg.budget : 0;   // money secured = credits already claimed × per-credit stake (can't be forfeited now)
+  $("streak").textContent = (started && state.spent>0) ? Math.round(perKr*state.spent)+" kr secured" : "";
   renderLog();
   renderRest();
   renderStatus();
@@ -790,18 +834,19 @@ function renderStatus(){
 // ===== settings =====
 function explainText(c){ const per=c.budget? (c.stake/c.budget).toFixed(0):0;
   const days=periodDays(c,new Date(),Date.now()), allot=days? c.budget/days : 0, perDay=allot<1?allot.toFixed(2):Math.round(allot);
-  return `Each ${c.period==="month"?"month":"week"} you get <b>${c.budget} credits</b> (≈ <b>${perDay} per day</b>) and stake <b>${c.stake} kr</b>. Credits are only claimable inside a daily <b>${c.windowH||WINDOW_H}-hour window</b> from <b>${minToHHMM(c.windowStart)}</b>. Finish a ${c.block}-min session to claim one (then a ${c.brk}-min break). Any of the day's share you don't claim before the window closes is <b>forfeited for good</b> (~${per} kr each) — and you're still billed the full <b>${c.stake} kr</b> at period end. Show up daily or lose it. You get <b>${c.restBudget||0} emergency day${(c.restBudget||0)===1?"":"s"}</b> a period — for genuine emergencies only, pre-committed (locked the night before); that day's share is set aside, never forfeited.`; }
-function fillSettings(){ $("s_period").value=state.cfg.period; $("s_budget").value=state.cfg.budget; $("s_block").value=state.cfg.block; $("s_brk").value=state.cfg.brk; $("s_stake").value=state.cfg.stake; $("s_winstart").value=minToHHMM(state.cfg.windowStart); $("s_winhours").value=state.cfg.windowH; $("s_restbudget").value=state.cfg.restBudget; $("s_goal").value=state.goal;
+  return `Each ${c.period==="month"?"month":"week"} you get <b>${c.budget} credits</b> (≈ <b>${perDay} per day</b>) and stake <b>${c.stake} kr</b>. Credits are only claimable inside a daily <b>${c.windowH||WINDOW_H}-hour window</b> from <b>${minToHHMM(c.windowStart)}</b>. Finish a ${c.block}-min session to claim one${c.breakOn?` (then a ${c.brk}-min break)`:``}. Any of the day's share you don't claim before the window closes is <b>forfeited for good</b> (~${per} kr each). At period end you only lose what you forfeited — claim everything and you owe <b>nothing</b>. Show up daily or lose it. You get <b>${c.restBudget||0} emergency day${(c.restBudget||0)===1?"":"s"}</b> a period — for genuine emergencies only, pre-committed (locked the night before); that day's share is set aside, never forfeited.`; }
+function fillSettings(){ $("s_period").value=state.cfg.period; $("s_budget").value=state.cfg.budget; $("s_block").value=state.cfg.block; $("s_brk").value=state.cfg.brk; $("s_breakon").checked=!!state.cfg.breakOn; $("s_stake").value=state.cfg.stake; $("s_winstart").value=minToHHMM(state.cfg.windowStart); $("s_winhours").value=state.cfg.windowH; $("s_restbudget").value=state.cfg.restBudget; $("s_goal").value=state.goal;
   $("explain").innerHTML=explainText(state.cfg); }
 function savePlan(){ const old=state.cfg.period, firstStart=!state.startedAt;
   state.goal=$("s_goal").value.trim();
   const m=/^(\d{1,2}):(\d{2})$/.exec($("s_winstart").value), wm=m? Math.min(1439,Math.max(0,+m[1]*60+ +m[2])) : DEFAULTS.windowStart;
-  state.cfg={ period:$("s_period").value, budget:Math.max(1,+$("s_budget").value||DEFAULTS.budget), block:Math.max(1,+$("s_block").value||DEFAULTS.block), brk:Math.max(1,+$("s_brk").value||DEFAULTS.brk), stake:Math.max(0,+$("s_stake").value||0), windowStart:wm, windowH:Math.max(1,Math.min(24,+$("s_winhours").value||DEFAULTS.windowH)), restBudget:Math.max(0,Math.min(99,+$("s_restbudget").value||0)) };
+  state.cfg={ period:$("s_period").value, budget:Math.max(1,+$("s_budget").value||DEFAULTS.budget), block:Math.max(1,+$("s_block").value||DEFAULTS.block), brk:Math.max(1,+$("s_brk").value||DEFAULTS.brk), breakOn:$("s_breakon").checked, stake:Math.max(0,+$("s_stake").value||0), windowStart:wm, windowH:Math.max(1,Math.min(24,+$("s_winhours").value||DEFAULTS.windowH)), restBudget:Math.max(0,Math.min(99,+$("s_restbudget").value||0)) };
   if(firstStart || state.cfg.period!==old){                                   // first save starts the clock; changing period re-bases it from now
     state.startedAt=Date.now(); state.spent=0; state.marks=[]; state.forfeitedCredits=0; state.restDays=[]; state.restedCredits=0;
     state.settledThrough=state.startedAt; state.periodKey=periodBounds(state.cfg,new Date(),state.startedAt).key;
   }
-  fillSettings(); commit(); refreshChart(); render(); }
+  fillSettings(); commit(); refreshChart(); render();
+  const ps=$("planSheet"); if(ps.open) ps.close(); }                          // dismiss the sheet once the plan is saved
 // ===== rest days — pre-commit a future day off; locked the night before, no same-day opt-outs =====
 function commitRestDay(v){
   const m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec((v||"").trim());
@@ -857,7 +902,9 @@ function renderRest(){
 $("planRest").onclick=planRestDay;
 $("restList").addEventListener("click", e=>{ const p=e.target.closest("[data-k]"); if(p) unmarkRestDay(p.dataset.k); });
 $("save").onclick=savePlan;
-$("primaryCta").onclick=()=>{ if(!state.startedAt) savePlan(); else startBlock(); };  // contextual: save on first run, start once the clock runs
+function openSheet(id){ fillSettings(); renderRest(); $(id).showModal(); }               // hydrate controls, then present the sheet
+document.querySelectorAll(".sheetbar button").forEach(b=> b.onclick=()=>openSheet(b.dataset.sheet));
+$("primaryCta").onclick=()=>{ if(!state.startedAt) openSheet("planSheet"); else startBlock(); };  // first run → set the plan in a sheet; once the clock runs it starts sessions
 $("log").addEventListener("click", e=>{                                  // click a completed session to add/edit its description (commit body)
   const row=e.target.closest("[data-t]"); if(!row) return;
   const entry=(state.log||[]).find(x=>x.t===+row.dataset.t); if(!entry) return;
