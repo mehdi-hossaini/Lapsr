@@ -284,10 +284,20 @@
   .track > i{display:block;height:100%;border-radius:999px;background:var(--accent);transition:width .4s ease}
   .track > i.full{background:var(--danger)}
   .usage-row .r{font-size:11px;color:var(--dim);letter-spacing:.02em}
-  /* contextual primary: static block in the sidebar on desktop; a sticky thumb-bar on mobile (one element, two homes) */
-  #primaryCta{display:block;width:100%;margin-top:28px;padding:15px 24px;font-size:15px;min-height:48px}
+  /* contextual primary: composer bar (title + send) static in the sidebar on desktop; a sticky thumb-bar on mobile (one element, two homes) */
+  .ctabar{display:flex;align-items:center;gap:0;width:100%;margin-top:28px;
+    background:var(--field);border:1px solid var(--line);border-radius:999px;padding:5px;
+    transition:border-color .2s ease}
+  .ctabar:focus-within{border-color:var(--accent)}
+  .ctabar input{flex:1;width:auto;min-width:0;background:transparent;border:none;border-radius:999px;padding:11px 18px}
+  .ctabar input:focus{outline:none;box-shadow:none}
+  #primaryCta{display:flex;align-items:center;gap:7px;border-radius:999px;padding:12px 22px 12px 20px;font-size:15px;min-height:44px;white-space:nowrap;flex-shrink:0}
+  #primaryCta::after{content:"";width:7px;height:7px;border-top:2px solid currentColor;border-right:2px solid currentColor;
+    transform:rotate(45deg) translateX(-1px);flex-shrink:0}
+  #primaryCta:disabled::after{opacity:.5}
   @media(max-width:859px){
-    #primaryCta{position:fixed;left:16px;right:16px;bottom:calc(12px + env(safe-area-inset-bottom));width:auto;margin:0;z-index:50;box-shadow:0 6px 22px rgba(0,0,0,.22)}
+    .ctabar{position:fixed;left:16px;right:16px;width:auto;bottom:calc(12px + env(safe-area-inset-bottom));margin:0;z-index:50;
+      box-shadow:0 8px 28px rgba(0,0,0,.28)}
     main{padding-bottom:88px}
   }
 </style>
@@ -330,20 +340,20 @@
       <div><span class="l">at risk if period ended now</span><br><span class="big"><span id="atRisk">0</span> kr</span></div>
       <div class="lost">forfeited so far: <span id="wasted">0</span> kr</div>
     </div>
-    <button id="primaryCta" class="primary">Set your plan</button>
+    <div class="ctabar" id="ctaBar">
+      <input id="intent" placeholder="e.g. draft section 2 of the report" aria-label="Session title" />
+      <button id="primaryCta" class="primary">Set your plan</button>
+    </div>
   </section>
 
   <!-- FOCUS SESSION -->
   <section class="panel">
     <h2>Focus session</h2>
-    <label for="intent">When I start, I will…</label>
-    <input id="intent" placeholder="e.g. draft section 2 of the report" />
     <div class="sub2" id="windowInfo"></div>
     <div class="phasetag" id="phaseTag"></div>
     <div id="blockTimer" class="blocktimer">--:--</div>
-    <div class="actions">
+    <div class="actions" style="justify-content:flex-end">
       <button id="cancelBlock" class="ghost" disabled>Cancel</button>
-      <button id="startBlock" class="primary">Start session</button>
     </div>
     <div class="sblock" id="blockStatus">
       <div class="sline"><span class="sdot"></span><span id="stState">Ready</span><span class="stask" id="stTask"></span><span class="sright" id="stRight"></span></div>
@@ -648,12 +658,12 @@ let wakeLock=null;
 async function lockScreen(){ unlockScreen(); try{ wakeLock=await navigator.wakeLock?.request("screen"); }catch(e){} }
 function unlockScreen(){ try{ wakeLock?.release(); }catch(e){} wakeLock=null; }
 function setBtns(){ const cs=canStart(state,new Date());
-  $("startBlock").disabled = !cs.ok || phase!==null; $("cancelBlock").disabled = phase===null;
+  $("cancelBlock").disabled = phase===null;
   $("phaseTag").textContent = phase==="work" ? "● focusing" : phase==="break" ? "○ recovering — walk, look away" : "";
-  const cta=$("primaryCta");                                        // contextual primary: Save plan → Start session, hidden mid-session
-  if(phase!==null){ cta.style.display="none"; }
-  else if(!state.startedAt){ cta.style.display=""; cta.textContent="Set your plan"; cta.disabled=false; }
-  else { cta.style.display=""; cta.textContent="Start session"; cta.disabled=!cs.ok; } }
+  const cta=$("primaryCta"), bar=$("ctaBar"), intentEl=$("intent");   // contextual primary: Set plan → composer (title + Start session), hidden mid-session
+  if(phase!==null){ bar.style.display="none"; }
+  else if(!state.startedAt){ bar.style.display=""; intentEl.style.display="none"; cta.textContent="Set your plan"; cta.disabled=false; }
+  else { bar.style.display=""; intentEl.style.display=""; cta.textContent="Start session"; cta.disabled=!cs.ok; } }
 function startBlock(auto){                                            // auto (string, optional): a predetermined session firing on its own, no click gesture
   const cs=canStart(state, new Date());
   if(!cs.ok){ if(auto==null) alert(cs.msg); return; }
@@ -1091,8 +1101,8 @@ $("log").addEventListener("click", e=>{                                  // clic
   const entry=(state.log||[]).find(x=>x.t===+row.dataset.t); if(!entry) return;
   const d=prompt("Note for this session (optional):", entry.desc||""); if(d===null) return;
   entry.desc=d.trim(); commit(); _logSig=""; renderLog(); });
-$("startBlock").onclick=()=>startBlock(); $("cancelBlock").onclick=cancelBlock;  // wrap: bare binding passes the click event as `auto`, poisoning curIntent
-$("intent").addEventListener("keydown",e=>{ if(e.key==="Enter" && !$("startBlock").disabled) startBlock(); });
+$("cancelBlock").onclick=cancelBlock;
+$("intent").addEventListener("keydown",e=>{ if(e.key==="Enter" && !$("primaryCta").disabled) startBlock(); });
 $("export").onclick=exportData;
 $("import").onclick=()=>$("importFile").click();
 $("importFile").onchange=(e)=>{ if(e.target.files[0]) importData(e.target.files[0]); e.target.value=""; };
