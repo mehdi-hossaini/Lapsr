@@ -440,7 +440,7 @@ function fmtDuration(ms){                                       // friendly noun
   const d=Math.floor(h/24); return (d>0?d+"d ":"")+(h%24)+"h period";
 }
 function periodBounds(cfg, now, anchor){
-  const a=anchor||0, t=+now, dur=Math.max(3600000, cfg.periodMs||DEFAULTS.periodMs);
+  const a=anchor||0, t=Math.max(+now, a), dur=Math.max(3600000, cfg.periodMs||DEFAULTS.periodMs);   // clamp to the anchor — a future-dated plan's "current period" is just its first, not a bucket rolled backward before it starts
   const start=a + Math.floor((t-a)/dur)*dur;
   return { start:new Date(start), end:new Date(start+dur), key:"P"+new Date(start).toISOString(), label:"This "+fmtDuration(dur) };
 }
@@ -472,6 +472,7 @@ function claimedInWindow(s, open, close){ const a=open.getTime(), b=close.getTim
   return (s.marks||[]).filter(m=>{ const t=m.t0??m.t; return t>=a&&t<b; }).length; }  // attribute by session START — a session straddling window-close still counts for its day
 function canStart(s, now){
   if(!s.startedAt) return {ok:false, msg:"Save your plan first to start the clock."};
+  if(s.startedAt>(+now)) return {ok:false, msg:"Plan starts "+new Date(s.startedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})+"."};
   if(creditsRemaining(s)<=0) return {ok:false, msg:"No credits left this period. Wait for the reset."};
   if(isRestDay(s, now)) return {ok:false, msg:"Emergency day — window resumes tomorrow."};
   const ws=windowState(s.cfg, now);
@@ -765,20 +766,24 @@ function fmtShort(ms){ if(ms<0)ms=0; const t=Math.floor(ms/1000), d=Math.floor(t
 function setMeter(id, pct, pctText, resetText){ const f=$(id+"Fill"); f.style.width=pct+"%"; f.className=pct>=100?"full":"";
   $(id+"Pct").textContent=pctText; $(id+"Reset").textContent=resetText; }
 function render(){
-  const now=new Date(), started=!!state.startedAt;
+  const now=new Date(), pending=!!state.startedAt && state.startedAt>now.getTime(), started=!!state.startedAt && !pending;
   if(started){
     // autonomous period reset + forfeiture (no button, no undo)
     if(state.periodKey!==periodBounds(state.cfg,now,state.startedAt).key){ const before=state.wasted; state=normalize(state); if(state.wasted!==before) commit(); fillSettings(); refreshChart(); }
     if(settleWindows(state, now)) commit();               // forfeit any daily windows that closed unused
   }
   const {start,end,label}=periodBounds(state.cfg,now,state.startedAt||now.getTime());
-  $("periodLabel").textContent=label;
+  $("periodLabel").textContent=pending?"Plan saved":label;
   const cd=$("countdown");
   if(started){
     const left=end-now; cd.textContent=fmtLeft(left);
     cd.className="countdown"+(left<6*3600000?" critical":left<24*3600000?" urgent":"");
     const opt={month:"short",day:"numeric"};
     $("periodRange").textContent=`${start.toLocaleDateString(undefined,opt)} – ${new Date(end-1).toLocaleDateString(undefined,opt)} · resets automatically`;
+  } else if(pending){
+    cd.textContent=fmtLeft(state.startedAt-now.getTime()); cd.className="countdown";
+    const opt={month:"short",day:"numeric"};
+    $("periodRange").textContent=`Starts ${new Date(state.startedAt).toLocaleDateString(undefined,opt)} – ${new Date(end-1).toLocaleDateString(undefined,opt)}`;
   } else {
     cd.textContent="—"; cd.className="countdown";
     $("periodRange").textContent="Save your plan below to start the clock.";
@@ -807,7 +812,7 @@ function render(){
     else { $("windowInfo").textContent=`Window closed · reopens ${fmtClock(ws.next)}`; }
   } else {
     setMeter("uPer", 0, "0% used", "—"); setMeter("uWin", 0, "0% used", "—");
-    $("windowInfo").textContent="Sessions begin once you save your plan.";
+    $("windowInfo").textContent = pending ? `Sessions begin ${new Date(state.startedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})}.` : "Sessions begin once you save your plan.";
   }
   const g=$("goalLine");
   if(state.goal){ g.className="goal"; g.innerHTML='<span class="lab">Goal · '+label.toLowerCase()+'</span>'+escapeHtml(state.goal); }
@@ -886,20 +891,21 @@ $("rp_grid").addEventListener("click", e=>{
 $("rp_prev").onclick=()=>{ rpMonth=new Date(rpMonth.getFullYear(),rpMonth.getMonth()-1,1); rpRender(); };
 $("rp_next").onclick=()=>{ rpMonth=new Date(rpMonth.getFullYear(),rpMonth.getMonth()+1,1); rpRender(); };
 function fillSettings(){
-  const today=dateOnly(new Date()), dur=state.cfg.periodMs||DEFAULTS.periodMs, days=Math.max(1,Math.round(dur/86400000));
-  rpStart=today; rpEnd=new Date(today.getTime()+(days-1)*86400000); rpMonth=new Date(rpStart.getFullYear(),rpStart.getMonth(),1);
+  const base=dateOnly(state.startedAt||Date.now()), dur=state.cfg.periodMs||DEFAULTS.periodMs, days=Math.max(1,Math.round(dur/86400000));
+  rpStart=base; rpEnd=new Date(base.getTime()+(days-1)*86400000); rpMonth=new Date(rpStart.getFullYear(),rpStart.getMonth(),1);
   rpRender();
   $("s_budget").value=state.cfg.budget; $("s_block").value=state.cfg.block; $("s_brk").value=state.cfg.brk; $("s_breakon").checked=!!state.cfg.breakOn; $("s_stake").value=state.cfg.stake; $("s_winstart").value=minToHHMM(state.cfg.windowStart); $("s_winhours").value=state.cfg.windowH; $("s_restbudget").value=state.cfg.restBudget; $("s_goal").value=state.goal;
   $("explain").innerHTML=explainText(state.cfg); }
-function savePlan(){ const old=state.cfg.periodMs, firstStart=!state.startedAt;
+function savePlan(){ const oldMs=state.cfg.periodMs, oldAnchor=state.startedAt, firstStart=!state.startedAt;
   state.goal=$("s_goal").value.trim();
   if(rpStart==null || rpEnd==null){ alert("Pick a period start and end date."); return; }
+  const anchor=rpStart.getTime();                                              // clock anchors to the picked start day, not "now"
   const periodMs=(Math.round((rpEnd-rpStart)/86400000)+1)*86400000;             // inclusive whole days
   const m=/^(\d{1,2}):(\d{2})$/.exec($("s_winstart").value), wm=m? Math.min(1439,Math.max(0,+m[1]*60+ +m[2])) : DEFAULTS.windowStart;
   state.cfg={ periodMs, budget:Math.max(1,+$("s_budget").value||DEFAULTS.budget), block:Math.max(1,+$("s_block").value||DEFAULTS.block), brk:Math.max(1,+$("s_brk").value||DEFAULTS.brk), breakOn:$("s_breakon").checked, stake:Math.max(0,+$("s_stake").value||0), windowStart:wm, windowH:Math.max(1,Math.min(24,+$("s_winhours").value||DEFAULTS.windowH)), restBudget:Math.max(0,Math.min(99,+$("s_restbudget").value||0)) };
-  if(firstStart || state.cfg.periodMs!==old){                                // first save starts the clock; changing period length re-bases it from now
-    state.startedAt=Date.now(); state.spent=0; state.marks=[]; state.forfeitedCredits=0; state.restDays=[]; state.restedCredits=0;
-    state.settledThrough=state.startedAt; state.periodKey=periodBounds(state.cfg,new Date(),state.startedAt).key;
+  if(firstStart || anchor!==oldAnchor || state.cfg.periodMs!==oldMs){         // first save, or the picked start/length changed — re-bases the clock
+    state.startedAt=anchor; state.spent=0; state.marks=[]; state.forfeitedCredits=0; state.restDays=[]; state.restedCredits=0;
+    state.settledThrough=anchor; state.periodKey=periodBounds(state.cfg,new Date(),anchor).key;
   }
   fillSettings(); commit(); refreshChart(); render();
   const ps=$("sheet"); if(ps.open) ps.close(); }                              // dismiss the sheet once the plan is saved
@@ -1004,7 +1010,7 @@ if(new URLSearchParams(location.search).get("test")==="1"){
   console.assert(windowState(cw,new Date(2026,5,22,11,0)).phase==="open","inside 09:00–14:00 window");
   console.assert(windowState(cw,new Date(2026,5,22,15,0)).phase==="after","after 14:00 window");
   console.assert(windowState({...cw,windowH:8},new Date(2026,5,22,16,0)).phase==="open","8-hour window (09:00–17:00) still open at 16:00");
-  const sNow={cfg:cw, startedAt:Date.now(), spent:0, marks:[]};
+  const sNow={cfg:cw, startedAt:new Date(2026,5,20,0,0).getTime(), spent:0, marks:[]};   // anchored before the simulated "now" dates below, not real wall-clock
   console.assert(!canStart({cfg:cw,spent:0,marks:[]}, new Date(2026,5,22,11,0)).ok, "cannot start before the plan is saved");
   console.assert(!canStart(sNow, new Date(2026,5,22,15,0)).ok, "cannot start outside the window");
   console.assert(canStart(sNow, new Date(2026,5,22,11,0)).ok, "can start inside the window");
@@ -1025,6 +1031,10 @@ if(new URLSearchParams(location.search).get("test")==="1"){
   settleWindows(st, new Date(2026,5,22,15,0));   // now settle → mark exists, counts for its start-day window
   console.assert(st.forfeitedCredits===0 && st.wasted===0, "completed straddling session claims its window — no forfeit, got "+st.forfeitedCredits);
   console.assert(creditsRemaining({cfg:cw,spent:0,forfeitedCredits:1,restedCredits:1})===5, "rested + forfeited credits both leave the remaining pool");
+  // a future-dated plan (anchor after "now") is pending, not counting down or claimable yet — the bug was anchoring to Date.now() instead of the picked start
+  const future=new Date(2026,5,25).getTime();
+  console.assert(!canStart({cfg:cw, startedAt:future, spent:0, marks:[]}, new Date(2026,5,22,11,0)).ok, "cannot start before a future-dated plan's start day");
+  console.assert(periodBounds(cw, new Date(2026,5,22,11,0), future).start.getTime()===future, "a future-dated plan's current period is its first, not rolled backward");
   console.log("Lapsr self-check passed");
 }
 </script>
