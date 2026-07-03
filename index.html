@@ -341,13 +341,13 @@
       <label for="s_goal">Goal this period</label>
       <input id="s_goal" placeholder="e.g. ship the landing page" />
       <div class="grid2">
-        <div><label>Period</label>
-          <select id="s_period"><option value="week">Weekly</option><option value="month">Monthly</option></select></div>
+        <div><label>Period start</label><input id="s_pstart" type="datetime-local" /></div>
+        <div><label>Period end</label><input id="s_pend" type="datetime-local" /></div>
         <div><label>Budget (credits / period)</label><input id="s_budget" type="number" min="1" max="500" /></div>
+        <div><label>Stake for the period (kr)</label><input id="s_stake" type="number" min="0" step="10" /></div>
         <div><label>Session length (minutes)</label><input id="s_block" type="number" min="1" max="120" /></div>
         <div><label>Break length (minutes)</label><input id="s_brk" type="number" min="1" max="40" /></div>
         <div class="chkcell"><label class="chk"><input id="s_breakon" type="checkbox" /><span>Auto-start a break after each session</span></label></div>
-        <div><label>Stake for the period (kr)</label><input id="s_stake" type="number" min="0" step="10" /></div>
         <div><label>Daily window start</label><input id="s_winstart" type="time" /></div>
         <div><label>Daily window length (hours)</label><input id="s_winhours" type="number" min="1" max="24" step="0.5" /></div>
         <div><label>Emergency days / period</label><input id="s_restbudget" type="number" min="0" max="99" /></div>
@@ -407,25 +407,21 @@
 // ponytail: local-only. Move between devices via JSON export/import (no backend, no accounts).
 // The period clock + forfeiture run on their own — no reset button, no pausing.
 const KEY="focuscredits.v2";
-const DEFAULTS={ period:"week", budget:20, block:50, brk:10, breakOn:false, stake:200, windowStart:540, windowH:5, restBudget:2 }; // windowStart = minutes from midnight (09:00); windowH = daily claim-window length in hours; restBudget = pre-committed days off per period
+const DEFAULTS={ periodMs:7*86400000, budget:20, block:50, brk:10, breakOn:false, stake:200, windowStart:540, windowH:5, restBudget:2 }; // periodMs = recurring period length, set via the Period start/end pickers; windowStart = minutes from midnight (09:00); windowH = daily claim-window length in hours; restBudget = pre-committed days off per period
 const WINDOW_H=5; // fallback daily-window length (hours) when cfg.windowH is absent — see DEFAULTS.windowH
 
 // ---- pure helpers (unit-tested via ?test=1) ----
 // The clock is anchored to when the user saved their plan (`anchor` = startedAt, ms) and rolls forward in
 // fixed periods from there — it does NOT run off the calendar, so nothing counts down before the first save.
-function addMonths(ms, n){ const d=new Date(ms), day=d.getDate();
-  const t=new Date(d.getFullYear(), d.getMonth()+n, day, d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds());
-  if(t.getDate()!==day) t.setDate(0);                          // clamp overflow (e.g. Jan 31 +1mo → Feb 28)
-  return t.getTime();
+function fmtDuration(ms){                                       // friendly noun phrase for a period length
+  const h=Math.round(ms/3600000);
+  if(h%24===0){ const d=h/24; if(d===7) return "week"; if(d===30||d===31) return "month"; return d+"-day period"; }
+  const d=Math.floor(h/24); return (d>0?d+"d ":"")+(h%24)+"h period";
 }
 function periodBounds(cfg, now, anchor){
-  const a=anchor||0, t=+now;
-  if(cfg.period==="month"){
-    let start=a; while(addMonths(start,1)<=t) start=addMonths(start,1);
-    return { start:new Date(start), end:new Date(addMonths(start,1)), key:"M"+new Date(start).toISOString(), label:"This month" };
-  }
-  const wk=7*86400000, start=a + Math.floor((t-a)/wk)*wk;
-  return { start:new Date(start), end:new Date(start+wk), key:"W"+new Date(start).toISOString(), label:"This week" };
+  const a=anchor||0, t=+now, dur=Math.max(3600000, cfg.periodMs||DEFAULTS.periodMs);
+  const start=a + Math.floor((t-a)/dur)*dur;
+  return { start:new Date(start), end:new Date(start+dur), key:"P"+new Date(start).toISOString(), label:"This "+fmtDuration(dur) };
 }
 function periodDays(cfg, now, anchor){ const {start,end}=periodBounds(cfg,now,anchor); return Math.round((end-start)/86400000); }
 function creditsRemaining(s){ return Math.max(0, s.cfg.budget - s.spent - (s.forfeitedCredits||0) - (s.restedCredits||0)); }
@@ -833,14 +829,21 @@ function renderStatus(){
 // ===== settings =====
 function explainText(c){ const per=c.budget? (c.stake/c.budget).toFixed(0):0;
   const days=periodDays(c,new Date(),Date.now()), allot=days? c.budget/days : 0, perDay=allot<1?allot.toFixed(2):Math.round(allot);
-  return `Each ${c.period==="month"?"month":"week"} you get <b>${c.budget} credits</b> (≈ <b>${perDay} per day</b>) and stake <b>${c.stake} kr</b>. Credits are only claimable inside a daily <b>${c.windowH||WINDOW_H}-hour window</b> from <b>${minToHHMM(c.windowStart)}</b>. Finish a ${c.block}-min session to claim one${c.breakOn?` (then a ${c.brk}-min break)`:``}. Any of the day's share you don't claim before the window closes is <b>forfeited for good</b> (~${per} kr each). At period end you only lose what you forfeited — claim everything and you owe <b>nothing</b>. Show up daily or lose it. You get <b>${c.restBudget||0} emergency day${(c.restBudget||0)===1?"":"s"}</b> a period — for genuine emergencies only, pre-committed (locked the night before); that day's share is set aside, never forfeited.`; }
-function fillSettings(){ $("s_period").value=state.cfg.period; $("s_budget").value=state.cfg.budget; $("s_block").value=state.cfg.block; $("s_brk").value=state.cfg.brk; $("s_breakon").checked=!!state.cfg.breakOn; $("s_stake").value=state.cfg.stake; $("s_winstart").value=minToHHMM(state.cfg.windowStart); $("s_winhours").value=state.cfg.windowH; $("s_restbudget").value=state.cfg.restBudget; $("s_goal").value=state.goal;
+  return `Each ${fmtDuration(c.periodMs)} you get <b>${c.budget} credits</b> (≈ <b>${perDay} per day</b>) and stake <b>${c.stake} kr</b>. Credits are only claimable inside a daily <b>${c.windowH||WINDOW_H}-hour window</b> from <b>${minToHHMM(c.windowStart)}</b>. Finish a ${c.block}-min session to claim one${c.breakOn?` (then a ${c.brk}-min break)`:``}. Any of the day's share you don't claim before the window closes is <b>forfeited for good</b> (~${per} kr each). At period end you only lose what you forfeited — claim everything and you owe <b>nothing</b>. Show up daily or lose it. You get <b>${c.restBudget||0} emergency day${(c.restBudget||0)===1?"":"s"}</b> a period — for genuine emergencies only, pre-committed (locked the night before); that day's share is set aside, never forfeited.`; }
+function toDTLocal(ms){ const d=new Date(ms), p=n=>String(n).padStart(2,"0");
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes()); }
+function fillSettings(){ const now=Date.now(), dur=state.cfg.periodMs||DEFAULTS.periodMs;
+  $("s_pstart").value=toDTLocal(now); $("s_pend").value=toDTLocal(now+dur);
+  $("s_budget").value=state.cfg.budget; $("s_block").value=state.cfg.block; $("s_brk").value=state.cfg.brk; $("s_breakon").checked=!!state.cfg.breakOn; $("s_stake").value=state.cfg.stake; $("s_winstart").value=minToHHMM(state.cfg.windowStart); $("s_winhours").value=state.cfg.windowH; $("s_restbudget").value=state.cfg.restBudget; $("s_goal").value=state.goal;
   $("explain").innerHTML=explainText(state.cfg); }
-function savePlan(){ const old=state.cfg.period, firstStart=!state.startedAt;
+function savePlan(){ const old=state.cfg.periodMs, firstStart=!state.startedAt;
   state.goal=$("s_goal").value.trim();
+  const pStart=new Date($("s_pstart").value).getTime(), pEnd=new Date($("s_pend").value).getTime();
+  const periodMs=(pEnd>pStart)? Math.max(3600000, pEnd-pStart) : null;
+  if(periodMs===null){ alert("Period end must be after period start."); return; }
   const m=/^(\d{1,2}):(\d{2})$/.exec($("s_winstart").value), wm=m? Math.min(1439,Math.max(0,+m[1]*60+ +m[2])) : DEFAULTS.windowStart;
-  state.cfg={ period:$("s_period").value, budget:Math.max(1,+$("s_budget").value||DEFAULTS.budget), block:Math.max(1,+$("s_block").value||DEFAULTS.block), brk:Math.max(1,+$("s_brk").value||DEFAULTS.brk), breakOn:$("s_breakon").checked, stake:Math.max(0,+$("s_stake").value||0), windowStart:wm, windowH:Math.max(1,Math.min(24,+$("s_winhours").value||DEFAULTS.windowH)), restBudget:Math.max(0,Math.min(99,+$("s_restbudget").value||0)) };
-  if(firstStart || state.cfg.period!==old){                                   // first save starts the clock; changing period re-bases it from now
+  state.cfg={ periodMs, budget:Math.max(1,+$("s_budget").value||DEFAULTS.budget), block:Math.max(1,+$("s_block").value||DEFAULTS.block), brk:Math.max(1,+$("s_brk").value||DEFAULTS.brk), breakOn:$("s_breakon").checked, stake:Math.max(0,+$("s_stake").value||0), windowStart:wm, windowH:Math.max(1,Math.min(24,+$("s_winhours").value||DEFAULTS.windowH)), restBudget:Math.max(0,Math.min(99,+$("s_restbudget").value||0)) };
+  if(firstStart || state.cfg.periodMs!==old){                                // first save starts the clock; changing period length re-bases it from now
     state.startedAt=Date.now(); state.spent=0; state.marks=[]; state.forfeitedCredits=0; state.restDays=[]; state.restedCredits=0;
     state.settledThrough=state.startedAt; state.periodKey=periodBounds(state.cfg,new Date(),state.startedAt).key;
   }
@@ -931,9 +934,9 @@ if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").cat
 
 // ===== self-check: ?test=1 =====
 if(new URLSearchParams(location.search).get("test")==="1"){
-  const c={period:"week",budget:20,block:50,brk:10,stake:200};
-  console.assert(periodDays(c,new Date(),Date.now())===7, "week = 7 days");
-  console.assert(periodDays({...c,period:"month"}, new Date(2026,1,20), new Date(2026,1,15).getTime())===28, "Feb 2026 anchored = 28 days");
+  const c={periodMs:7*86400000,budget:20,block:50,brk:10,stake:200};
+  console.assert(periodDays(c,new Date(),Date.now())===7, "default (week-length) = 7 days");
+  console.assert(periodDays({...c,periodMs:9*86400000}, new Date(2026,1,20), new Date(2026,1,15).getTime())===9, "custom 9-day period = 9 days");
   const anc=new Date(2026,5,24,9,30).getTime();   // clock anchored to the save moment, not a calendar boundary
   console.assert(periodBounds(c,new Date(2026,5,26),anc).start.getTime()===anc, "rolling week starts at the save moment");
   console.assert(atRiskKr({cfg:c,spent:5})===150, "at-risk = 10kr × 15 = 150, got "+atRiskKr({cfg:c,spent:5}));
@@ -942,7 +945,7 @@ if(new URLSearchParams(location.search).get("test")==="1"){
   console.assert(n.wasted===150 && n.spent===0 && n.periodKey!=="W-bogus", "forfeiture on rolling period change, got "+n.wasted);
   console.assert(escapeHtml('<img src=x onerror=alert(1)>')==='&lt;img src=x onerror=alert(1)&gt;', "intent text is HTML-escaped in the log");
   // daily 5-hour window model
-  const cw={period:"week",budget:7,block:50,brk:10,stake:70,windowStart:540};   // 09:00–14:00, 1 credit/day, 10 kr each
+  const cw={budget:7,block:50,brk:10,stake:70,windowStart:540};   // default week-length period, 09:00–14:00, 1 credit/day, 10 kr each
   console.assert(windowState(cw,new Date(2026,5,22,8,0)).phase==="before","before 09:00 window");
   console.assert(windowState(cw,new Date(2026,5,22,11,0)).phase==="open","inside 09:00–14:00 window");
   console.assert(windowState(cw,new Date(2026,5,22,15,0)).phase==="after","after 14:00 window");
