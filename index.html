@@ -259,6 +259,11 @@
   .tab{background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);font:500 11px/1 'Inter',sans-serif;letter-spacing:.14em;text-transform:uppercase;padding:11px 14px;margin-bottom:-1px;cursor:pointer;transition:color .15s,border-color .15s}
   .tab:hover{color:var(--txt)}
   .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  /* four tabs (esp. "Predetermined") don't fit one row on a phone — wrap to 2x2 instead of scrolling */
+  @media(max-width:420px){
+    .tabs{display:grid;grid-template-columns:1fr 1fr;gap:2px 4px;overflow:visible}
+    .tab{padding:9px 4px;font-size:9.5px;letter-spacing:.06em;text-align:center}
+  }
   .pane{display:none}
   .pane.active{display:block}
   .commit .node{position:absolute;left:-5px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
