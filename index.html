@@ -768,7 +768,7 @@ function refreshChart(){
 }
 
 // ===== completed log (github-commit style) =====
-function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }  // String(): never throw on a non-string intent, so a bad save can't crash render → runaway completeWork
 // per-day forfeit (kr) for the calendar day `key` under the current cfg — 0 unless the window has closed unclaimed within this period
 function dayForfeitKr(key){
   if(!state.startedAt) return 0;
@@ -1091,7 +1091,7 @@ $("log").addEventListener("click", e=>{                                  // clic
   const entry=(state.log||[]).find(x=>x.t===+row.dataset.t); if(!entry) return;
   const d=prompt("Note for this session (optional):", entry.desc||""); if(d===null) return;
   entry.desc=d.trim(); commit(); _logSig=""; renderLog(); });
-$("startBlock").onclick=startBlock; $("cancelBlock").onclick=cancelBlock;
+$("startBlock").onclick=()=>startBlock(); $("cancelBlock").onclick=cancelBlock;  // wrap: bare binding passes the click event as `auto`, poisoning curIntent
 $("intent").addEventListener("keydown",e=>{ if(e.key==="Enter" && !$("startBlock").disabled) startBlock(); });
 $("export").onclick=exportData;
 $("import").onclick=()=>$("importFile").click();
@@ -1118,6 +1118,7 @@ if(new URLSearchParams(location.search).get("test")==="1"){
   const n=normalize(stale);
   console.assert(n.wasted===150 && n.spent===0 && n.periodKey!=="W-bogus", "forfeiture on rolling period change, got "+n.wasted);
   console.assert(escapeHtml('<img src=x onerror=alert(1)>')==='&lt;img src=x onerror=alert(1)&gt;', "intent text is HTML-escaped in the log");
+  console.assert(escapeHtml({})==='[object Object]', "escapeHtml coerces a non-string intent instead of throwing (a throw here loops completeWork → runaway spent)");
   // daily 5-hour window model
   const cw={budget:7,block:50,brk:10,stake:70,windowStart:540};   // default week-length period, 09:00–14:00, 1 credit/day, 10 kr each
   console.assert(windowState(cw,new Date(2026,5,22,8,0)).phase==="before","before 09:00 window");
