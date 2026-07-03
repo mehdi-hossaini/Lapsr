@@ -831,10 +831,11 @@ function renderStatus(){
   else if(phase==="break"){ $("stState").textContent="On break"; task.textContent="— recover, look away"; }
   else { $("stState").textContent=canStart(state,new Date()).ok?"Ready":"Idle"; task.textContent=""; }
 
-  if(!state.startedAt){                                          // no plan saved yet — nothing to show, don't fake a window off DEFAULTS
+  if(!state.startedAt || state.startedAt>Date.now()){            // no plan saved yet, or its start day hasn't arrived — don't fake a window
     $("stOpen").textContent="--:--"; $("stClose").textContent="--:--";
     $("stFill").className="sfill"; $("stFill").style.width="0%";
-    $("stRight").textContent=""; $("stMid").textContent="save a plan first";
+    $("stRight").textContent="";
+    $("stMid").textContent = state.startedAt>Date.now() ? "starts "+new Date(state.startedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"}) : "save a plan first";
     $("stTrack").querySelectorAll(".mark").forEach(m=>m.remove());
     $("stNow").className="snow"; $("stNow").style.left="0%";
     return;
