@@ -191,6 +191,30 @@
   .sfill{position:absolute;top:0;left:0;height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 28%,transparent),var(--accent));transition:width .6s linear}
   .sfill.closed{background:color-mix(in srgb,var(--dim) 55%,transparent)}
   .strack .mark{position:absolute;top:50%;width:3px;height:15px;border-radius:2px;background:var(--bg);box-shadow:0 0 0 1.5px var(--accent);transform:translate(-50%,-50%);z-index:1;cursor:default}
+  .strack .mark.future{width:9px;height:9px;border-radius:50%;background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--dim)}
+  /* predetermined queue — a vertical timeline, not a form list: mono time rail, connecting line, next-up pulses like a live session */
+  .pdform{display:flex;gap:10px;margin-top:6px}
+  .pdform input#pd_time{flex:none;width:108px}
+  .pdform input#pd_intent{flex:1;min-width:0}
+  .pdform2{display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:14px}
+  .pdform2 .chk{margin:0}
+  .pdform2 button{flex:none}
+  .pdlist{display:flex;flex-direction:column}
+  .pditem{display:flex;align-items:center;gap:14px;padding:12px 0 12px 20px;min-height:20px;border-left:2px solid var(--line);position:relative}
+  .pdlist .pditem:last-child{border-left-color:transparent}
+  .pditem .pddot{position:absolute;left:-6px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--dim);z-index:1}
+  .pditem.daily .pddot{box-shadow:inset 0 0 0 1.5px var(--accent)}
+  .pditem.next .pddot{background:var(--accent);box-shadow:none;animation:ripple 1.8s ease-out infinite}
+  .pditem.done{opacity:.4}
+  .pditem .pdtime{flex:none;width:46px;font:500 14px/1 'JetBrains Mono',ui-monospace,monospace;color:var(--txt);letter-spacing:-.01em}
+  .pditem.next .pdtime{color:var(--accent)}
+  .pditem .pdrow{flex:1;min-width:0;display:flex;align-items:baseline;gap:8px;overflow:hidden}
+  .pditem .pdintent{font-size:13px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pdtag{flex:none;font:500 9px/1 'Inter',sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
+  .pdtag.accent{color:var(--accent)}
+  .pdcountdown{flex:none;font:500 10.5px/1 'JetBrains Mono',ui-monospace,monospace;color:var(--accent);letter-spacing:.02em}
+  .pditem .pddel{flex:none;color:var(--dim);font-size:12px;opacity:.4;cursor:pointer;transition:opacity .15s,color .15s}
+  .pditem:hover .pddel{opacity:1;color:var(--danger)}
   .strack .snow{position:absolute;top:50%;width:15px;height:15px;border-radius:50%;border:2px solid var(--accent);background:var(--bg);transform:translate(-50%,-50%);display:none;z-index:2}
   .strack .snow.on{display:block;animation:ripple 1.8s ease-out infinite}
   .sends{display:flex;justify-content:space-between;align-items:baseline;margin-top:15px;font:500 10px/1 'JetBrains Mono',ui-monospace,monospace;color:var(--dim);letter-spacing:.06em}
@@ -227,6 +251,7 @@
   /* ===== bottom sheets — native <dialog>, action-only; the page stays a scrollable billboard ===== */
   dialog.sheet{border:0;background:var(--panel);color:var(--txt);width:100%;max-width:600px;margin:0 auto;position:fixed;inset:auto 0 0 0;
     padding:10px 22px calc(28px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;max-height:88vh;overflow:auto;box-shadow:0 -10px 34px rgba(0,0,0,.30)}
+  @media(max-width:680px){ dialog.sheet{max-height:70vh} }
   dialog.sheet::backdrop{background:rgba(0,0,0,.5);backdrop-filter:blur(2px)}
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   dialog.sheet[open]{animation:sheetUp .22s cubic-bezier(.32,.72,0,1)}
@@ -238,7 +263,8 @@
   .gear{position:fixed;top:calc(14px + env(safe-area-inset-top));right:16px;z-index:48;background:none;border:0;color:var(--dim);
     font-size:20px;line-height:1;cursor:pointer;padding:8px;border-radius:50%;transition:color .15s,transform .2s}
   .gear:hover{color:var(--accent);transform:rotate(30deg)}
-  .tabs{display:flex;gap:2px;margin:2px 0 24px;border-bottom:1px solid var(--line)}
+  .tabs{display:flex;gap:2px;margin:2px 0 24px;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden}
+  .tabs .tab{flex:none}
   .tab{background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);font:500 11px/1 'Inter',sans-serif;letter-spacing:.14em;text-transform:uppercase;padding:11px 14px;margin-bottom:-1px;cursor:pointer;transition:color .15s,border-color .15s}
   .tab:hover{color:var(--txt)}
   .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
@@ -349,6 +375,7 @@
     <div class="grab" aria-hidden="true"></div>
     <div class="tabs" role="tablist">
       <button type="button" class="tab" role="tab" data-tab="plan">Plan</button>
+      <button type="button" class="tab" role="tab" data-tab="predet">Predetermined</button>
       <button type="button" class="tab" role="tab" data-tab="em">Emergency</button>
       <button type="button" class="tab" role="tab" data-tab="backup">Backup</button>
     </div>
@@ -375,6 +402,20 @@
       </div>
       <div class="actions"><button id="save" class="primary">Save plan</button></div>
       <div class="explain" id="explain"></div>
+    </div>
+
+    <div class="pane" data-pane="predet">
+      <p class="emnote" id="predetNote">Queue sessions ahead of time — once today's window opens, the next due one starts on its own, no tap needed. Requires a saved plan.</p>
+      <div class="pdform">
+        <input id="pd_time" type="time" aria-label="Time" />
+        <input id="pd_intent" placeholder="e.g. draft section 2 of the report" aria-label="Intent" />
+      </div>
+      <div class="pdform2">
+        <label class="chk"><input id="pd_repeat" type="checkbox" /><span>Repeat daily</span></label>
+        <button id="pd_add" class="primary" type="button">Queue</button>
+      </div>
+      <div class="divider" style="margin:24px auto"></div>
+      <div id="predetList" class="pdlist"></div>
     </div>
 
     <div class="pane" data-pane="em">
@@ -451,6 +492,13 @@ function dayKey(d){ const x=new Date(d); return x.getFullYear()+"-"+String(x.get
 function isRestDay(s, date){ return (s.restDays||[]).includes(dayKey(date)); }
 function restBudget(s){ return Math.max(0, s.cfg.restBudget||0); }
 function atRiskKr(s){ const per=s.cfg.budget? s.cfg.stake/s.cfg.budget : 0; return Math.round(per*creditsRemaining(s)); }
+// ---- predetermined sessions: queued ahead of time, auto-start once due — earliest not-yet-fired-today item whose time has passed ----
+function nextDue(list, now, todayKey){
+  const nowMin=now.getHours()*60+now.getMinutes();
+  const due=(list||[]).filter(it=>it.lastFired!==todayKey && nowMin>=it.time).sort((a,b)=>a.time-b.time);
+  return due[0]||null;
+}
+function pdOrder(list, todayKey){ return (list||[]).filter(it=>it.lastFired!==todayKey).sort((a,b)=>a.time-b.time); }  // not-yet-fired-today items, earliest first — [0] is "next up" whether or not it's already due
 
 // ---- daily 5-hour window: claim inside it or that day's share is forfeited for good ----
 function minToHHMM(min){ const h=Math.floor((min%1440)/60), m=Math.round(min%60); return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
@@ -520,6 +568,7 @@ function normalize(s){
   if(typeof s.restedCredits!=="number") s.restedCredits=0;       // allotment set aside by rest days — not forfeited, not billed
   if(typeof s.settledThrough!=="number") s.settledThrough=0;     // ms: last window-close we've settled forfeiture up to
   if(!Array.isArray(s.log)) s.log=[];                 // completed-session history (survives period reset)
+  if(!Array.isArray(s.predet)) s.predet=[];            // queued sessions: {id,time(min-of-day),intent,reusable,lastFired(dayKey|null)} — auto-start once due
   if(typeof s.periodKey!=="string") s.periodKey="";
   if(typeof s.startedAt!=="number") s.startedAt=0;    // 0 = plan not saved yet → clock idle, nothing counts down
   if(typeof s.goal!=="string") s.goal="";             // period goal; completed sessions are steps toward it. ponytail: persists across resets, user re-edits
@@ -605,17 +654,20 @@ function setBtns(){ const cs=canStart(state,new Date());
   if(phase!==null){ cta.style.display="none"; }
   else if(!state.startedAt){ cta.style.display=""; cta.textContent="Set your plan"; cta.disabled=false; }
   else { cta.style.display=""; cta.textContent="Start session"; cta.disabled=!cs.ok; } }
-function startBlock(){
+function startBlock(auto){                                            // auto (string, optional): a predetermined session firing on its own, no click gesture
   const cs=canStart(state, new Date());
-  if(!cs.ok){ alert(cs.msg); return; }
-  curIntent=$("intent").value.trim();
-  if(!curIntent && !confirm("Start without naming the task? Naming it boosts follow-through.")) return;
-  if(window.Notification && Notification.permission==="default") Notification.requestPermission();  // ask inside the click gesture
-  beep(0);                                                             // unlock AudioContext inside the gesture (autoplay policy)
+  if(!cs.ok){ if(auto==null) alert(cs.msg); return; }
+  curIntent = auto!=null ? auto : $("intent").value.trim();
+  if(auto==null && !curIntent && !confirm("Start without naming the task? Naming it boosts follow-through.")) return;
+  if(auto==null){                                                     // gesture-gated bits only apply to a real click
+    if(window.Notification && Notification.permission==="default") Notification.requestPermission();  // ask inside the click gesture
+    beep(0);                                                           // unlock AudioContext inside the gesture (autoplay policy)
+  }
   phase="work"; curT0=Date.now(); phaseEndTs=curT0+state.cfg.block*60*1000;
   state.session={phase,endTs:phaseEndTs,intent:curIntent,t0:curT0}; commit();   // persist so screen-off/reload resumes
   lockScreen();
-  $("blockHint").textContent = curIntent ? "Now: "+curIntent : "Focused, single-task work.";
+  $("intent").value=curIntent;
+  $("blockHint").textContent = auto!=null ? "Auto-started: "+curIntent : (curIntent ? "Now: "+curIntent : "Focused, single-task work.");
   setBtns(); tick(); ticker=setInterval(tick,250);
 }
 function startBreak(anchor){ phase="break"; phaseEndTs=(anchor||Date.now())+state.cfg.brk*60*1000;  // anchor = true work-end ts when resuming, else now
@@ -771,7 +823,9 @@ function render(){
     // autonomous period reset + forfeiture (no button, no undo)
     if(state.periodKey!==periodBounds(state.cfg,now,state.startedAt).key){ const before=state.wasted; state=normalize(state); if(state.wasted!==before) commit(); fillSettings(); refreshChart(); }
     if(settleWindows(state, now)) commit();               // forfeit any daily windows that closed unused
+    if(phase===null) checkPredetAuto(now);                 // fire the next due predetermined session, if any
   }
+  if($("sheet").open && document.querySelector('.pane[data-pane=predet]').classList.contains("active")) renderPredet();  // live countdown while the tab is visible
   const {start,end,label}=periodBounds(state.cfg,now,state.startedAt||now.getTime());
   $("periodLabel").textContent=pending?"Plan saved":label;
   const cd=$("countdown");
@@ -856,6 +910,13 @@ function renderStatus(){
   for(const e of (state.log||[]).filter(e=>e.t>=t0)){
     const m=document.createElement("div"); m.className="mark";
     m.style.left=pct(e.t)+"%"; m.title=fmtClock(new Date(e.t))+(e.intent?" · "+e.intent:"");
+    track.appendChild(m);
+  }
+  const todayKey=dayKey(now);                                    // queued predetermined sessions still due today — hollow ticks ahead of the now-marker
+  for(const it of (state.predet||[]).filter(it=>it.lastFired!==todayKey)){
+    const t=t0+it.time*60000;
+    const m=document.createElement("div"); m.className="mark future";
+    m.style.left=pct(t)+"%"; m.title=minToHHMM(it.time)+" · "+it.intent+" (queued)";
     track.appendChild(m);
   }
   const live=$("stNow"); live.className="snow"+(phase!==null?" on":""); live.style.left=pct(now.getTime())+"%";
@@ -973,11 +1034,55 @@ function renderRest(){
 $("planRest").onclick=planRestDay;
 $("restList").addEventListener("click", e=>{ const p=e.target.closest("[data-k]"); if(p) unmarkRestDay(p.dataset.k); });
 $("save").onclick=savePlan;
-function showTab(tab){                                                                     // one sheet, three tabs
+// ===== predetermined sessions — queue ahead of time, auto-start once due (checkPredetAuto runs every render tick) =====
+function checkPredetAuto(now){
+  if(!state.startedAt || state.startedAt>now.getTime()) return;      // no active plan — nothing to fire
+  if(!canStart(state, now).ok) return;                               // window closed, no credits, rest day, etc.
+  const item=nextDue(state.predet, now, dayKey(now));
+  if(!item) return;
+  if(item.reusable) item.lastFired=dayKey(now);
+  else state.predet=state.predet.filter(x=>x.id!==item.id);
+  commit(); renderPredet();
+  startBlock(item.intent);
+}
+function addPredet(){
+  if(!state.startedAt){ alert("Save your plan first."); return; }
+  const m=/^(\d{1,2}):(\d{2})$/.exec($("pd_time").value), time=m? Math.min(1439,Math.max(0,+m[1]*60+ +m[2])) : null;
+  const intent=$("pd_intent").value.trim();
+  if(time===null){ alert("Pick a time."); return; }
+  if(!intent){ alert("Name the task."); return; }
+  state.predet.push({id:Date.now()+"-"+Math.random().toString(36).slice(2), time, intent, reusable:$("pd_repeat").checked, lastFired:null});
+  commit(); $("pd_time").value=""; $("pd_intent").value=""; $("pd_repeat").checked=false; renderPredet();
+}
+function removePredet(id){ state.predet=state.predet.filter(x=>x.id!==id); commit(); renderPredet(); }
+function renderPredet(){
+  const started=!!state.startedAt;
+  $("predetNote").textContent = started
+    ? "Queue sessions ahead of time — once today's window opens, the next due one starts on its own, no tap needed."
+    : "Requires a saved plan — save one in Plan first.";
+  $("pd_add").disabled=!started;
+  const el=$("predetList"), list=(state.predet||[]).slice().sort((a,b)=>a.time-b.time);
+  if(!list.length){ el.innerHTML='<div class="logempty">Nothing queued — add one below.</div>'; return; }
+  const now=new Date(), nowMin=now.getHours()*60+now.getMinutes(), todayKey=dayKey(now);
+  const nextId=pdOrder(state.predet, todayKey)[0]?.id;
+  const dayStart=new Date(now).setHours(0,0,0,0);
+  el.innerHTML=list.map(it=>{
+    const fired=it.lastFired===todayKey, isNext=it.id===nextId, due=nowMin>=it.time;
+    const cls="pditem"+(it.reusable?" daily":"")+(isNext?" next":"")+(fired?" done":"");
+    const tags=[];
+    if(it.reusable) tags.push('<span class="pdtag'+(isNext?" accent":"")+'">daily</span>');
+    if(isNext) tags.push('<span class="pdcountdown">'+(due?"due now":"in "+fmtShort(dayStart+it.time*60000-now.getTime()))+'</span>');
+    else if(fired) tags.push('<span class="pdtag">done today</span>');
+    return `<div class="${cls}" data-id="${it.id}"><span class="pddot"></span><span class="pdtime">${minToHHMM(it.time)}</span><span class="pdrow"><span class="pdintent">${escapeHtml(it.intent)}</span>${tags.join("")}</span><span class="pddel" data-del="${it.id}" title="Remove">✕</span></div>`;
+  }).join("");
+}
+$("pd_add").onclick=addPredet;
+$("predetList").addEventListener("click", e=>{ const d=e.target.closest("[data-del]"); if(d) removePredet(d.dataset.del); });
+function showTab(tab){                                                                     // one sheet, four tabs
   document.querySelectorAll("#sheet .tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===tab));
   document.querySelectorAll("#sheet .pane").forEach(p=>p.classList.toggle("active", p.dataset.pane===tab));
 }
-function openSheet(tab){ fillSettings(); renderRest(); showTab(tab||"plan"); const s=$("sheet"); if(!s.open) s.showModal(); }  // hydrate, select tab, present
+function openSheet(tab){ fillSettings(); renderRest(); renderPredet(); showTab(tab||"plan"); const s=$("sheet"); if(!s.open) s.showModal(); }  // hydrate, select tab, present
 document.querySelectorAll("#sheet .tab").forEach(t=> t.onclick=()=>showTab(t.dataset.tab));
 $("settingsBtn").onclick=()=>openSheet("plan");
 $("primaryCta").onclick=()=>{ if(!state.startedAt) openSheet("plan"); else startBlock(); };  // first run → set the plan; once the clock runs it starts sessions
@@ -1044,6 +1149,12 @@ if(new URLSearchParams(location.search).get("test")==="1"){
   const future=new Date(2026,5,25).getTime();
   console.assert(!canStart({cfg:cw, startedAt:future, spent:0, marks:[]}, new Date(2026,5,22,11,0)).ok, "cannot start before a future-dated plan's start day");
   console.assert(periodBounds(cw, new Date(2026,5,22,11,0), future).start.getTime()===future, "a future-dated plan's current period is its first, not rolled backward");
+  // predetermined sessions — earliest not-yet-fired-today item whose time has passed
+  const pdNow=new Date(2026,5,22,10,15), pdKey=dayKey(pdNow);   // 10:15am
+  const pdList=[{id:"a",time:11*60,intent:"later"},{id:"b",time:9*60,intent:"morning"},{id:"c",time:10*60,intent:"just passed",lastFired:pdKey}];
+  console.assert(nextDue(pdList,pdNow,pdKey)?.id==="b", "earliest due, not-yet-fired item wins, got "+nextDue(pdList,pdNow,pdKey)?.id);
+  console.assert(nextDue([{id:"a",time:11*60}],pdNow,pdKey)===null, "nothing due yet returns null");
+  console.assert(nextDue([{id:"c",time:10*60,lastFired:pdKey}],pdNow,pdKey)===null, "already-fired-today item is skipped even if due");
   console.log("Lapsr self-check passed");
 }
 </script>
