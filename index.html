@@ -145,6 +145,22 @@
   .restpill:hover{border-color:var(--danger);color:var(--danger)}
   .restpill.locked{opacity:.6;cursor:default}
   .restpill.locked:hover{border-color:var(--line);color:var(--dim)}
+  .rangepick{margin-top:6px}
+  .rp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .rp-head span{font:500 12.5px/1 'Inter',sans-serif;letter-spacing:.04em;text-transform:capitalize}
+  .rp-nav{background:transparent;border:1px solid var(--line);color:var(--dim);width:28px;height:28px;padding:0;border-radius:2px;font-size:15px;line-height:1}
+  .rp-nav:hover{border-color:var(--txt);color:var(--txt)}
+  .rp-dow{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;color:var(--dim);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+  .rp-grid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px}
+  .rp-day{position:relative;height:34px;display:flex;align-items:center;justify-content:center;font:500 12.5px/1 'JetBrains Mono',ui-monospace,monospace;color:var(--txt);cursor:pointer;background:none;border:0}
+  .rp-day.empty{cursor:default}
+  .rp-day .rp-num{position:relative;z-index:1;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+  .rp-day.inrange::before{content:"";position:absolute;inset:3px -1px;background:color-mix(in srgb,var(--accent) 16%,transparent)}
+  .rp-day.rangestart::before{left:50%}
+  .rp-day.rangeend::before{right:50%}
+  .rp-day.today .rp-num{box-shadow:inset 0 0 0 1px var(--dim)}
+  .rp-day.start .rp-num,.rp-day.end .rp-num{background:var(--accent);color:var(--on-accent)}
+  .rp-sub{margin-top:10px;font-size:11.5px;color:var(--dim);letter-spacing:.02em}
   button{font:500 13px/1 'Inter',system-ui,sans-serif;letter-spacing:.02em;border:0;border-radius:2px;padding:13px 24px;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
   button.primary{background:var(--accent);color:var(--on-accent)}
   button.primary:hover:not(:disabled){background:var(--accent-dk)}
@@ -340,9 +356,14 @@
     <div class="pane" data-pane="plan">
       <label for="s_goal">Goal this period</label>
       <input id="s_goal" placeholder="e.g. ship the landing page" />
+      <label>Period</label>
+      <div class="rangepick" id="s_range">
+        <div class="rp-head"><button type="button" class="rp-nav" id="rp_prev" aria-label="Previous month">‹</button><span id="rp_month"></span><button type="button" class="rp-nav" id="rp_next" aria-label="Next month">›</button></div>
+        <div class="rp-dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+        <div class="rp-grid" id="rp_grid"></div>
+        <div class="rp-sub" id="rp_sub"></div>
+      </div>
       <div class="grid2">
-        <div><label>Period start</label><input id="s_pstart" type="datetime-local" /></div>
-        <div><label>Period end</label><input id="s_pend" type="datetime-local" /></div>
         <div><label>Budget (credits / period)</label><input id="s_budget" type="number" min="1" max="500" /></div>
         <div><label>Stake for the period (kr)</label><input id="s_stake" type="number" min="0" step="10" /></div>
         <div><label>Session length (minutes)</label><input id="s_block" type="number" min="1" max="120" /></div>
@@ -830,17 +851,50 @@ function renderStatus(){
 function explainText(c){ const per=c.budget? (c.stake/c.budget).toFixed(0):0;
   const days=periodDays(c,new Date(),Date.now()), allot=days? c.budget/days : 0, perDay=allot<1?allot.toFixed(2):Math.round(allot);
   return `Each ${fmtDuration(c.periodMs)} you get <b>${c.budget} credits</b> (≈ <b>${perDay} per day</b>) and stake <b>${c.stake} kr</b>. Credits are only claimable inside a daily <b>${c.windowH||WINDOW_H}-hour window</b> from <b>${minToHHMM(c.windowStart)}</b>. Finish a ${c.block}-min session to claim one${c.breakOn?` (then a ${c.brk}-min break)`:``}. Any of the day's share you don't claim before the window closes is <b>forfeited for good</b> (~${per} kr each). At period end you only lose what you forfeited — claim everything and you owe <b>nothing</b>. Show up daily or lose it. You get <b>${c.restBudget||0} emergency day${(c.restBudget||0)===1?"":"s"}</b> a period — for genuine emergencies only, pre-committed (locked the night before); that day's share is set aside, never forfeited.`; }
-function toDTLocal(ms){ const d=new Date(ms), p=n=>String(n).padStart(2,"0");
-  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes()); }
-function fillSettings(){ const now=Date.now(), dur=state.cfg.periodMs||DEFAULTS.periodMs;
-  $("s_pstart").value=toDTLocal(now); $("s_pend").value=toDTLocal(now+dur);
+// ---- period range picker: tap a start day, tap an end day — a calendar range, not two separate fields ----
+let rpMonth=new Date(), rpStart=null, rpEnd=null;
+function dateOnly(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+function rpRender(){
+  const y=rpMonth.getFullYear(), mo=rpMonth.getMonth();
+  $("rp_month").textContent=rpMonth.toLocaleDateString(undefined,{month:"long",year:"numeric"});
+  const first=new Date(y,mo,1), lead=(first.getDay()+6)%7, days=new Date(y,mo+1,0).getDate();
+  const today=dateOnly(new Date()).getTime(), sT=rpStart?.getTime(), eT=rpEnd?.getTime();
+  let html="";
+  for(let i=0;i<lead;i++) html+='<div class="rp-day empty"></div>';
+  for(let d=1; d<=days; d++){
+    const t=new Date(y,mo,d).getTime();
+    let cls="rp-day";
+    if(t===today) cls+=" today";
+    if(sT!=null && eT!=null && t>=sT && t<=eT) cls+=" inrange";
+    if(t===sT) cls+=" start"+(eT!=null?" rangestart":"");
+    if(t===eT) cls+=" end rangeend";
+    html+=`<button type="button" class="${cls}" data-t="${t}"><span class="rp-num">${d}</span></button>`;
+  }
+  $("rp_grid").innerHTML=html;
+  const sub=$("rp_sub"), fmt=t=>new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  sub.textContent = (sT!=null && eT!=null) ? `${fmt(sT)} – ${fmt(eT)} · ${Math.round((eT-sT)/86400000)+1} days`
+    : sT!=null ? `${fmt(sT)} – pick an end date` : "Pick a start date, then an end date.";
+}
+$("rp_grid").addEventListener("click", e=>{
+  const b=e.target.closest(".rp-day:not(.empty)"); if(!b) return;
+  const t=+b.dataset.t;
+  if(rpStart==null || rpEnd!=null){ rpStart=new Date(t); rpEnd=null; }
+  else if(t<rpStart.getTime()){ rpEnd=rpStart; rpStart=new Date(t); }
+  else rpEnd=new Date(t);
+  rpRender();
+});
+$("rp_prev").onclick=()=>{ rpMonth=new Date(rpMonth.getFullYear(),rpMonth.getMonth()-1,1); rpRender(); };
+$("rp_next").onclick=()=>{ rpMonth=new Date(rpMonth.getFullYear(),rpMonth.getMonth()+1,1); rpRender(); };
+function fillSettings(){
+  const today=dateOnly(new Date()), dur=state.cfg.periodMs||DEFAULTS.periodMs, days=Math.max(1,Math.round(dur/86400000));
+  rpStart=today; rpEnd=new Date(today.getTime()+(days-1)*86400000); rpMonth=new Date(rpStart.getFullYear(),rpStart.getMonth(),1);
+  rpRender();
   $("s_budget").value=state.cfg.budget; $("s_block").value=state.cfg.block; $("s_brk").value=state.cfg.brk; $("s_breakon").checked=!!state.cfg.breakOn; $("s_stake").value=state.cfg.stake; $("s_winstart").value=minToHHMM(state.cfg.windowStart); $("s_winhours").value=state.cfg.windowH; $("s_restbudget").value=state.cfg.restBudget; $("s_goal").value=state.goal;
   $("explain").innerHTML=explainText(state.cfg); }
 function savePlan(){ const old=state.cfg.periodMs, firstStart=!state.startedAt;
   state.goal=$("s_goal").value.trim();
-  const pStart=new Date($("s_pstart").value).getTime(), pEnd=new Date($("s_pend").value).getTime();
-  const periodMs=(pEnd>pStart)? Math.max(3600000, pEnd-pStart) : null;
-  if(periodMs===null){ alert("Period end must be after period start."); return; }
+  if(rpStart==null || rpEnd==null){ alert("Pick a period start and end date."); return; }
+  const periodMs=(Math.round((rpEnd-rpStart)/86400000)+1)*86400000;             // inclusive whole days
   const m=/^(\d{1,2}):(\d{2})$/.exec($("s_winstart").value), wm=m? Math.min(1439,Math.max(0,+m[1]*60+ +m[2])) : DEFAULTS.windowStart;
   state.cfg={ periodMs, budget:Math.max(1,+$("s_budget").value||DEFAULTS.budget), block:Math.max(1,+$("s_block").value||DEFAULTS.block), brk:Math.max(1,+$("s_brk").value||DEFAULTS.brk), breakOn:$("s_breakon").checked, stake:Math.max(0,+$("s_stake").value||0), windowStart:wm, windowH:Math.max(1,Math.min(24,+$("s_winhours").value||DEFAULTS.windowH)), restBudget:Math.max(0,Math.min(99,+$("s_restbudget").value||0)) };
   if(firstStart || state.cfg.periodMs!==old){                                // first save starts the clock; changing period length re-bases it from now
