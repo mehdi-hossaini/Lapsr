@@ -399,9 +399,11 @@
     .g-status{grid-area:status;display:flex;align-items:stretch;flex-wrap:wrap;gap:0;text-align:left;padding:0;overflow:hidden}
     .g-status h2,.g-status .divider,.g-status .credits,.g-status .track{display:none}
     .g-status .st-period,.g-status .row,.g-status .usage,.g-status .risk{
-      margin:0;padding:15px 22px;display:flex;flex-direction:column;justify-content:center;white-space:nowrap;
-      border-left:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
-    .g-status .st-period{border-left:0;align-items:flex-start;gap:5px;min-width:186px}
+      margin:0;padding:16px 30px;display:flex;flex-direction:column;justify-content:center;white-space:nowrap;position:relative}
+    /* soft vertical dividers that fade at the ends — premium separation, not a hard rule */
+    .g-status .row::before,.g-status .usage::before,.g-status .risk::before{content:"";position:absolute;left:0;top:18%;bottom:18%;width:1px;
+      background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--line) 92%,transparent) 22%,color-mix(in srgb,var(--line) 92%,transparent) 78%,transparent)}
+    .g-status .st-period{align-items:flex-start;gap:5px;min-width:186px}
     .g-status .st-period .countdown{font-size:24px}
     .g-status .st-period .sub2{margin:0;color:var(--dim);font-size:11px;letter-spacing:.02em}
     .g-status .row{flex-direction:row;align-items:center;gap:20px;min-width:200px}
