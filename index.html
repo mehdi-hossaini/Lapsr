@@ -397,22 +397,32 @@
        each in its own cell divided by a hairline. Fixed widths + nowrap so ticking numbers never
        reflow the row (the "texts keep moving" problem). */
     .g-status{grid-area:status;display:flex;align-items:stretch;flex-wrap:wrap;gap:0;text-align:left;padding:0;overflow:hidden}
-    .g-status h2,.g-status .divider,.g-status .credits,.g-status .track{display:none}
+    .g-status h2,.g-status .divider,.g-status .credits{display:none}
     .g-status .st-period,.g-status .row,.g-status .usage,.g-status .risk{
-      margin:0;padding:16px 30px;display:flex;flex-direction:column;justify-content:center;white-space:nowrap;position:relative}
+      margin:0;padding:18px 34px;display:flex;flex-direction:column;justify-content:center;white-space:nowrap;position:relative}
     /* soft vertical dividers that fade at the ends — premium separation, not a hard rule */
-    .g-status .row::before,.g-status .usage::before,.g-status .risk::before{content:"";position:absolute;left:0;top:18%;bottom:18%;width:1px;
-      background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--line) 92%,transparent) 22%,color-mix(in srgb,var(--line) 92%,transparent) 78%,transparent)}
-    .g-status .st-period{align-items:flex-start;gap:5px;min-width:186px}
-    .g-status .st-period .countdown{font-size:24px}
-    .g-status .st-period .sub2{margin:0;color:var(--dim);font-size:11px;letter-spacing:.02em}
-    .g-status .row{flex-direction:row;align-items:center;gap:20px;min-width:200px}
-    .g-status .stat{min-width:44px}
-    .g-status .stat .n{font-size:20px}
-    .g-status .usage{gap:9px;min-width:186px}           /* two meters STACKED — compact */
-    .g-status .usage-row{gap:3px}
+    .g-status .row::before,.g-status .usage::before,.g-status .risk::before{content:"";position:absolute;left:0;top:24%;bottom:24%;width:1px;
+      background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--line) 80%,transparent) 30%,color-mix(in srgb,var(--line) 80%,transparent) 70%,transparent)}
+    /* uniform eyebrow labels + big tabular figures across every group — editorial, calm hierarchy */
+    .g-status .stat .l,.g-status .usage-row .t,.g-status .risk .l{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:500}
+    .g-status .st-period{align-items:flex-start;gap:7px;min-width:196px}
+    .g-status .st-period .countdown{font-size:27px;letter-spacing:.01em}
+    .g-status .st-period .sub2{margin:0;color:var(--dim);font-size:10.5px;letter-spacing:.03em}
+    .g-status .row{flex-direction:row;align-items:flex-start;gap:28px;min-width:214px}
+    .g-status .stat{min-width:44px;display:flex;flex-direction:column;gap:6px}
+    .g-status .stat .n{font-size:23px}
+    /* progress — slim gradient bars (visual, not dense text) */
+    .g-status .usage{gap:15px;min-width:226px}
+    .g-status .usage-row{gap:7px;min-width:176px}
+    .g-status .usage-row .urow-top{gap:12px}
+    .g-status .usage-row .pct{font-size:10.5px;color:var(--dim)}
+    .g-status .track{display:block;height:4px;border-radius:999px;background:color-mix(in srgb,var(--line) 55%,transparent);overflow:hidden}
+    .g-status .track > i{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 42%,transparent),var(--accent))}
     .g-status .usage-row .r{display:none}               /* drop the "resets in…" sub-line — already in the period group */
-    .g-status .risk{align-items:flex-start;gap:3px;min-width:186px}
+    .g-status .risk .big{font-size:23px}
+    .g-status .risk .lost{font-size:10px;color:var(--dim)}
+    .g-status .risk{align-items:flex-start;gap:6px;min-width:190px}
+    .g-status .risk > div:first-child{display:flex;flex-direction:column;gap:6px}
     .g-status .risk br{display:none}
 
     /* instant: a horizontal quick-launch strip — DESKTOP approach uses a progress BAR, not a ring */
@@ -1368,14 +1378,14 @@ document.addEventListener("click",e=>{ if(document.body.classList.contains("comp
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeCompose(); });
 $("tabPrev").onclick=()=>stepTab(-1); $("tabNext").onclick=()=>stepTab(1);
 $("settingsBtn").onclick=()=>openSheet("plan");
-$("primaryCta").onclick=()=>{ startBlock(); closeCompose(); };  // always start (free if no plan, metered if a plan is active)
+$("primaryCta").onclick=()=>{ if(!state.startedAt){ openSheet("plan"); } else { startBlock(); closeCompose(); } };  // no plan → open Plan (free focus lives in the instant panel); with a plan → start a metered session
 $("log").addEventListener("click", e=>{                                  // click a completed session to add/edit its description (commit body)
   const row=e.target.closest("[data-t]"); if(!row) return;
   const entry=(state.log||[]).find(x=>x.t===+row.dataset.t); if(!entry) return;
   const d=prompt("Note for this session (optional):", entry.desc||""); if(d===null) return;
   entry.desc=d.trim(); commit(); _logSig=""; renderLog(); });
 $("cancelBlock").onclick=cancelBlock;
-$("intent").addEventListener("keydown",e=>{ if(e.key==="Enter" && !$("primaryCta").disabled){ startBlock(); closeCompose(); } });
+$("intent").addEventListener("keydown",e=>{ if(e.key==="Enter" && state.startedAt && !$("primaryCta").disabled){ startBlock(); closeCompose(); } });
 $("export").onclick=exportData;
 $("import").onclick=()=>$("importFile").click();
 $("importFile").onchange=(e)=>{ if(e.target.files[0]) importData(e.target.files[0]); e.target.value=""; };
