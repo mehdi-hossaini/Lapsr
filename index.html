@@ -102,6 +102,16 @@
   .panel{padding:56px 4px;border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
   .panel.first{border-top:0;text-align:center}
   @media(max-width:680px){ header{padding:56px 22px 12px} main{padding:16px 22px 88px} .hero-col{padding:16px 22px 16px} .panel{padding:48px 2px} }
+  /* mobile/tablet: make each section's START unmistakable — an editorial numbered eyebrow + a rule that
+     fades to the right, in the one ink accent. Premium separation through type and rhythm, not cards. */
+  @media(max-width:859px){
+    body{counter-reset:sec}
+    .panel{border-top-color:var(--line)}                                   /* firmer boundary than the 55% hairline */
+    .panel:not(.first) > h2{display:block;margin:0 0 24px;padding-bottom:14px;
+      background:linear-gradient(90deg,color-mix(in srgb,var(--line) 85%,transparent),transparent) left bottom/100% 1px no-repeat}
+    .panel:not(.first) > h2::before{counter-increment:sec;content:counter(sec,decimal-leading-zero);
+      font:500 12px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0;color:var(--accent);margin-right:13px}
+  }
   h2{font-size:11px;text-transform:uppercase;letter-spacing:.25em;color:var(--dim);font-weight:500;margin:0 0 28px}
   .countdown{font:500 clamp(32px,9vw,46px)/1 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;letter-spacing:0;white-space:nowrap}
   .countdown.urgent{color:var(--accent)} .countdown.critical{color:var(--accent)}
@@ -505,7 +515,7 @@
   <div class="pane" data-pane="predet">
     <p class="emnote" id="predetNote">Queue sessions ahead of time — once today's window opens, the next due one starts on its own, no tap needed. Requires a saved plan.</p>
     <div class="pdform">
-      <div><label for="pd_time">Time</label><input id="pd_time" type="time" /></div>
+      <div><label for="pd_time">Time</label><input id="pd_time" type="time" value="09:00" /></div>
       <div><label for="pd_intent">Task</label><input id="pd_intent" placeholder="e.g. draft section 2 of the report" /></div>
     </div>
     <div class="pdform2">
@@ -727,6 +737,7 @@ function setBtns(){ const cs=canStart(state,new Date());
   else if(!state.startedAt){ bar.style.display=""; intentEl.style.display="none"; cta.textContent="Set your plan"; cta.disabled=false; }
   else { bar.style.display=""; intentEl.style.display=""; cta.textContent="Start session"; cta.disabled=!cs.ok; } }
 function startBlock(auto){                                            // auto (string, optional): a predetermined session firing on its own, no click gesture
+  if(phase!==null) return;                                           // a session is already running — never overwrite it (guards reload races + double-taps)
   const cs=canStart(state, new Date());
   if(!cs.ok){ if(auto==null) alert(cs.msg); return; }
   curIntent = auto!=null ? auto : $("intent").value.trim();
@@ -1124,7 +1135,7 @@ function addPredet(){
   if(time===null){ alert("Pick a time."); return; }
   if(!intent){ alert("Name the task."); return; }
   state.predet.push({id:Date.now()+"-"+Math.random().toString(36).slice(2), time, intent, reusable:$("pd_repeat").checked, lastFired:null});
-  commit(); $("pd_time").value=""; $("pd_intent").value=""; $("pd_repeat").checked=false; renderPredet();
+  commit(); $("pd_time").value="09:00"; $("pd_intent").value=""; $("pd_repeat").checked=false; renderPredet();
 }
 function removePredet(id){ state.predet=state.predet.filter(x=>x.id!==id); commit(); renderPredet(); }
 function renderPredet(){
@@ -1175,7 +1186,7 @@ $("importFile").onchange=(e)=>{ if(e.target.files[0]) importData(e.target.files[
 
 // ===== boot =====
 if(DEMO) document.querySelector("header .sub").textContent="demo data — nothing is saved";
-fillSettings(); refreshChart(); render(); resumeSession(); setInterval(render,1000);
+fillSettings(); refreshChart(); resumeSession(); render(); setInterval(render,1000);
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){
   if(phase===null){ state=DEMO?demoState():loadLocal(); fillSettings(); refreshChart(); render(); resumeSession(); }  // reload-after-sleep: restore running session
   else { render(); lockScreen(); }                                    // still ticking: tick() self-corrects; wake lock auto-released on hide, re-grab it
@@ -1233,6 +1244,123 @@ if(new URLSearchParams(location.search).get("test")==="1"){
   console.assert(nextDue([{id:"a",time:11*60}],pdNow,pdKey)===null, "nothing due yet returns null");
   console.assert(nextDue([{id:"c",time:10*60,lastFired:pdKey}],pdNow,pdKey)===null, "already-fired-today item is skipped even if due");
   console.log("Lapsr self-check passed");
+
+  // ===== 30-day soak — drives the REAL timer functions across a simulated month =====
+  // Proves the consumer promise: every session started this month is logged one-by-one and never lost,
+  // even across reloads, screen-sleep, predetermined auto-starts, forfeits, rest days and a period reset.
+  (function soak(){
+    const RealDate=Date; let CLOCK=0, fails=0;                       // virtual clock: new Date()/Date.now() → CLOCK, arg'd Date() stays real
+    const A=(cond,msg)=>{ if(!cond){ fails++; console.error("SOAK FAIL: "+msg); } };
+    // snapshot everything the sim mutates, restore in finally — never touch the user's real data
+    const SNAP={ ls:localStorage.getItem(KEY), state, phase, phaseEndTs, ticker, curIntent, curT0 };
+    try{
+      globalThis.Date=class extends RealDate{ constructor(...a){ a.length? super(...a): super(CLOCK); } static now(){ return CLOCK; } };
+      if(ticker) clearInterval(ticker);                              // start from a clean timer — the page may have a live/resumed session
+      phase=null; phaseEndTs=null; ticker=null; curIntent=""; curT0=0;
+      const day=(i,h,m)=>new RealDate(2026,0,1+i,h,m||0).getTime();  // absolute ms for day i (0-based) at h:m, Jan 2026
+      const at=ms=>{ CLOCK=ms; };
+      const BLK=50*60000;                                            // block=50min → endTs = start+BLK
+
+      // fresh 30-day plan: 09:00–17:00 window, budget 60 over 30 days = 2 credits/day, breaks off
+      const cfg={ periodMs:30*86400000, budget:60, block:50, brk:10, breakOn:false, stake:600, windowStart:540, windowH:8, restBudget:2 };
+      const startedAt=day(0,0,0);
+      state={ cfg, startedAt, spent:0, marks:[], log:[], wasted:0, forfeitedCredits:0, restDays:[], restedCredits:0,
+        settledThrough:0, predet:[], periodKey:periodBounds(cfg,new RealDate(day(0,0,0)),startedAt).key, goal:"", updated_at:0 };
+      const REST=[dayKey(new RealDate(day(5,0,0))), dayKey(new RealDate(day(12,0,0)))];   // two emergency days
+      state.restDays=REST.slice();
+
+      let claimed=0;                                                 // independent counter — the source of truth to check against
+      const claim=(intent,expT0)=>{ claimed++;                       // assert one-by-one: nothing lost, nothing duplicated, right session
+        A(state.marks.length===claimed, "mark count after "+intent+" = "+claimed+", got "+state.marks.length);
+        A(state.log.length===claimed,   "log count after "+intent+" = "+claimed+", got "+state.log.length);
+        A(state.spent===claimed,        "spent after "+intent+" = "+claimed+", got "+state.spent);
+        const m=state.marks[state.marks.length-1];
+        A(m && m.intent===intent && m.t0===expT0, "last mark matches "+intent+" (t0="+expT0+"), got "+(m&&m.intent)+"/"+(m&&m.t0)); };
+      const startS=(t,intent)=>{ at(t); startBlock(intent); if(ticker){ clearInterval(ticker); ticker=null; } };   // start + kill real ticker (we advance manually)
+      const completeS=(t,intent,t0)=>{ at(t); completeWork(); claim(intent,t0); };
+      const reload=()=>{ phase=null; phaseEndTs=null; ticker=null; curIntent=""; curT0=0; };   // model a fresh page load (module vars reset; state persisted)
+
+      for(let i=0;i<30;i++){
+        at(day(i,9,5)); render();                                    // each morning: settle yesterday's closed window + roll nothing; render() is the real code path
+
+        if(REST.includes(dayKey(new RealDate(day(i,0,0))))){         // emergency day — cannot start, allotment set aside
+          A(!canStart(state,new Date()).ok, "day "+i+" is a rest day → canStart blocked");
+          continue;
+        }
+        if(i===20) continue;                                         // zero-claim day → both credits forfeited at close
+        if(i===25){ startS(day(i,10,0),"d25"); completeS(day(i,10,50),"d25",day(i,10,0)); continue; }   // one-claim day → 1 forfeited
+
+        if(i===8){                                                   // #2 mid-session RELOAD, still running → resume, no mark, no restart
+          startS(day(i,10,0),"d8-s1"); at(day(i,10,20));
+          const before=state.marks.length; reload(); resumeSession();
+          A(phase==="work" && phaseEndTs===day(i,10,0)+BLK, "day8 reload resumes the running session drift-free");
+          A(state.marks.length===before, "day8 reload pushes NO mark for a session still in progress");
+          if(ticker){ clearInterval(ticker); ticker=null; }
+          completeS(day(i,10,50),"d8-s1",day(i,10,0));
+          startS(day(i,11,0),"d8-s2"); completeS(day(i,11,50),"d8-s2",day(i,11,0));
+          continue;
+        }
+        if(i===15){                                                  // #3 session FINISHED while away → resume must claim the credit once
+          startS(day(i,10,0),"d15-s1"); at(day(i,11,30));            // now past endTs (10:50)
+          reload(); resumeSession(); claim("d15-s1",day(i,10,0));    // resumeSession → completeWork(endTs)
+          A(phase===null && !state.session, "day15 finished-away session completed and cleared");
+          startS(day(i,12,0),"d15-s2"); completeS(day(i,12,50),"d15-s2",day(i,12,0));
+          continue;
+        }
+        if(i===10){                                                  // #4 THE BUG: running session + due unfired predet, reload must NOT overwrite it
+          state.predet=[{id:"pd",time:9*60+15,intent:"predetX",reusable:false,lastFired:null}];   // due since 09:15
+          startS(day(i,10,0),"d10-s1");                              // manual session running
+          const before=state.marks.length; const savedSession=state.session;
+          reload(); resumeSession(); render();                       // FIXED boot order: restore phase, THEN render()/checkPredetAuto
+          A(phase==="work" && state.session===savedSession, "day10 reload keeps the running session");
+          A(state.marks.length===before, "day10 reload pushes no mark");
+          A(state.predet.length===1 && state.predet[0].lastFired===null, "day10 due predet did NOT overwrite the running session");
+          startBlock("intruder"); A(phase==="work" && curIntent==="d10-s1" && state.marks.length===before, "startBlock is a no-op while a session runs (phase guard)");
+          if(ticker){ clearInterval(ticker); ticker=null; }
+          completeS(day(i,10,50),"d10-s1",day(i,10,0));              // claim s1
+          at(day(i,11,0)); render();                                 // slot free → #5 predet fires exactly once, as the 2nd session
+          if(ticker){ clearInterval(ticker); ticker=null; }
+          A(phase==="work" && state.predet.length===0, "predet fires once the session slot is free");
+          completeS(day(i,11,50),"predetX",day(i,11,0));
+          continue;
+        }
+        // normal day: two focus sessions
+        startS(day(i,10,0),"d"+i+"-s1"); completeS(day(i,10,50),"d"+i+"-s1",day(i,10,0));
+        startS(day(i,11,0),"d"+i+"-s2"); completeS(day(i,11,50),"d"+i+"-s2",day(i,11,0));
+      }
+      at(day(29,18,0)); render();                                    // settle the final day's window (stay inside the 30-day period — day 30 00:00 is the boundary)
+
+      // ---- end-of-month ledger: #6 forfeiture, #7 rest set-aside, #8 conservation ----
+      A(claimed===53, "expected 53 sessions claimed over the month, got "+claimed);
+      A(state.marks.length===53 && state.log.length===53, "53 marks and 53 log entries — no session lost");
+      A(state.forfeitedCredits===3, "3 credits forfeited (zero-day 2 + one-day 1), got "+state.forfeitedCredits);
+      A(state.restedCredits===4, "4 credits set aside by 2 rest days, got "+state.restedCredits);
+      const rem=creditsRemaining(state);
+      A(state.spent+state.forfeitedCredits+state.restedCredits+rem===cfg.budget, "credit conservation: 60 = spent+forfeited+rested+remaining");
+      // #10 export → import round-trip preserves the ledger
+      const round=normalize(JSON.parse(JSON.stringify(state)));
+      A(round.spent===state.spent && round.marks.length===53 && round.log.length===53 && round.wasted===state.wasted, "export/import round-trip preserves the ledger");
+
+      // #9 period reset: claim, cross the boundary, marks reset but log survives and remainder is billed once
+      state={ cfg:{...cfg,periodMs:7*86400000,budget:14}, startedAt:day(0,0,0), spent:0, marks:[], log:[{t:day(0,10,0),intent:"old"}],
+        wasted:0, forfeitedCredits:0, restDays:[], restedCredits:0, settledThrough:0, predet:[],
+        periodKey:periodBounds({...cfg,periodMs:7*86400000},new RealDate(day(0,0,0)),day(0,0,0)).key, goal:"", updated_at:0 };
+      startS(day(1,10,0),"wk1"); at(day(1,10,50)); completeWork();   // raw drive — the running `claimed` counter belongs to the month sim
+      A(state.marks.length===1 && state.spent===1, "reset-section: session recorded before the boundary");
+      const logLen=state.log.length, wastedBefore=state.wasted;
+      at(day(9,10,0)); render();                                     // day 9 > 7-day period end → autonomous reset (line ~897)
+      A(state.marks.length===0 && state.spent===0, "period reset clears marks and spent");
+      A(state.log.length===logLen, "period reset preserves the session log ("+logLen+")");
+      A(state.wasted>wastedBefore, "period reset bills the unclaimed remainder once");
+
+      console.log(fails===0 ? "Lapsr SOAK PASSED — 30-day month + reset, "+claimed+" sessions, 0 lost" : "Lapsr SOAK: "+fails+" FAILURES");
+    } finally {
+      globalThis.Date=RealDate;
+      state=SNAP.state; phase=SNAP.phase; phaseEndTs=SNAP.phaseEndTs; ticker=SNAP.ticker; curIntent=SNAP.curIntent; curT0=SNAP.curT0;
+      if(SNAP.ls!=null) localStorage.setItem(KEY,SNAP.ls); else localStorage.removeItem(KEY);
+      try{ render(); }catch(e){}                                     // repaint with the real state restored
+    }
+  })();
 }
 </script>
 </body>
