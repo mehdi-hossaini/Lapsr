@@ -77,6 +77,7 @@
     /* gruvbox light */
     --bg:#fbf1c7; --panel:#fbf1c7; --line:#d5c4a1; --txt:#3c3836; --dim:#7c6f64;
     --field:#f9f5d7; --accent:#d65d0e; --accent-dk:#af3a03; --on-accent:#fbf1c7; --danger:#cc241d;
+    --surface:color-mix(in srgb,var(--bg) 86%,#fff); --shadow:0 1px 2px rgba(60,56,54,.06),0 10px 28px rgba(60,56,54,.10);
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -84,6 +85,7 @@
       /* gruvbox dark */
       --bg:#282828; --panel:#282828; --line:#3c3836; --txt:#ebdbb2; --dim:#928374;
       --field:#32302f; --accent:#fe8019; --accent-dk:#d65d0e; --on-accent:#282828; --danger:#fb4934;
+      --shadow:0 1px 2px rgba(0,0,0,.40),0 12px 32px rgba(0,0,0,.55);
     }
   }
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -106,7 +108,10 @@
      fades to the right, in the one ink accent. Premium separation through type and rhythm, not cards. */
   @media(max-width:859px){
     body{counter-reset:sec}
-    .panel{border-top-color:var(--line)}                                   /* firmer boundary than the 55% hairline */
+    .hero-col,main{padding-left:14px;padding-right:14px}                    /* tighten column so raised surfaces breathe at the screen edge */
+    .panel{background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 55%,transparent);
+      border-radius:16px;box-shadow:var(--shadow);padding:26px 22px;margin:0 0 18px}   /* elevated surface — soft depth, not a hard card */
+    .panel.first{border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent)}  /* override the base border-top:0 so the hero lifts too */
     .panel:not(.first) > h2{display:block;margin:0 0 24px;padding-bottom:14px;
       background:linear-gradient(90deg,color-mix(in srgb,var(--line) 85%,transparent),transparent) left bottom/100% 1px no-repeat}
     .panel:not(.first) > h2::before{counter-increment:sec;content:counter(sec,decimal-leading-zero);
@@ -253,10 +258,17 @@
   dialog.sheet{border:0;background:var(--panel);color:var(--txt);width:100%;max-width:600px;margin:0 auto;position:fixed;inset:auto 0 0 0;
     padding:10px 22px calc(28px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;max-height:88vh;overflow:auto;box-shadow:0 -10px 34px rgba(0,0,0,.30)}
   @media(max-width:680px){ dialog.sheet{max-height:70vh} }
-  dialog.sheet::backdrop{background:rgba(0,0,0,.5);backdrop-filter:blur(2px)}
-  @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-  dialog.sheet[open]{animation:sheetUp .22s cubic-bezier(.32,.72,0,1)}
+  dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
+  @keyframes sheetUp{from{transform:translateY(101%)}to{transform:translateY(0)}}
+  @keyframes sheetFade{from{opacity:0}to{opacity:1}}
+  dialog.sheet[open]{animation:sheetUp .5s cubic-bezier(.16,1,.3,1)}
+  dialog.sheet[open]::backdrop{animation:sheetFade .45s ease}
   dialog.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
+  /* sheet elements get the same raised-surface depth as the page sections — one card per group, every tab */
+  .sheet .rangepick,.sheet .grid2,.sheet .embox,.sheet .pdlist,.sheet .pdgroup,.sheet .bkgroup{
+    background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 55%,transparent);
+    border-radius:14px;box-shadow:var(--shadow);padding:16px;margin:10px 0 6px}
+  .sheet .embox{width:auto}
   dialog.sheet h2{margin-top:0}
   .sheet-x{display:flex;justify-content:flex-end;margin:0}
   .sheet-x .xbtn{background:none;border:0;color:var(--dim);font-size:17px;cursor:pointer;padding:4px 2px;line-height:1}
@@ -296,10 +308,24 @@
   #primaryCta::after{content:"";width:7px;height:7px;border-top:2px solid currentColor;border-right:2px solid currentColor;
     transform:rotate(45deg) translateX(-1px);flex-shrink:0}
   #primaryCta:disabled::after{opacity:.5}
+  /* compact launcher (FAB): the composer collapses to one small accent button and expands on tap —
+     nothing permanent sits at the bottom stealing attention. Desktop keeps the in-flow composer. */
+  .fab{display:none}
   @media(max-width:859px){
-    .ctabar{position:fixed;left:16px;right:16px;width:auto;bottom:calc(12px + env(safe-area-inset-bottom));margin:0;z-index:50;
-      box-shadow:0 8px 28px rgba(0,0,0,.28)}
-    main{padding-bottom:88px}
+    .fab{display:flex;position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:51;
+      width:56px;height:56px;border-radius:50%;align-items:center;justify-content:center;
+      background:var(--accent);color:var(--on-accent);border:0;padding:0;cursor:pointer;
+      box-shadow:0 10px 26px color-mix(in srgb,var(--accent) 42%,transparent),0 6px 16px rgba(0,0,0,.26);
+      transition:transform .34s cubic-bezier(.16,1,.3,1),opacity .2s ease,box-shadow .2s ease}
+    .fab:active{transform:scale(.9)}
+    .fab:hover{box-shadow:0 12px 30px color-mix(in srgb,var(--accent) 54%,transparent),0 6px 16px rgba(0,0,0,.28)}
+    body.compose-open .fab,body.session-live .fab{opacity:0;transform:scale(.4) rotate(-35deg);pointer-events:none}
+    .ctabar{position:fixed;left:16px;right:16px;width:auto;bottom:calc(16px + env(safe-area-inset-bottom));margin:0;z-index:52;
+      box-shadow:0 16px 38px rgba(0,0,0,.34);transform-origin:bottom right;will-change:transform,opacity;
+      transition:transform .42s cubic-bezier(.16,1,.3,1),opacity .26s ease}
+    body:not(.compose-open) .ctabar{opacity:0;transform:translateY(8px) scale(.8);pointer-events:none}
+    body.compose-open .ctabar{opacity:1;transform:none}
+    main{padding-bottom:96px}
   }
   /* desktop: one screen, psychology-led hierarchy.
      - Status becomes a condensed top strip: a dashboard glance, not a competing focal box
@@ -348,7 +374,7 @@
     .g-chart{grid-area:chart;display:flex;flex-direction:column;min-height:0}
     .g-chart svg.chart{flex:1;height:auto;min-height:0}
 
-    .panel{min-height:0;overflow:auto;border-top:0;border:1px solid var(--line);border-radius:6px;padding:14px 30px}
+    .panel{min-height:0;overflow:auto;border-top:0;border:1px solid var(--line);border-radius:6px;padding:14px 30px;background:var(--surface);box-shadow:var(--shadow)}
     .divider{margin:10px auto}
     button{padding:10px 20px}
     .ctabar input{padding:8px 16px}
@@ -378,6 +404,7 @@
   <span class="sub">spend the interval — or lose it</span>
 </header>
 <button id="settingsBtn" class="gear" type="button" aria-label="Settings — plan, emergency days, backup">⚙</button>
+<button id="fab" class="fab" type="button" aria-label="Start a focus session"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
 <div class="hero-col">
   <noscript><p style="text-align:center">Lapsr needs JavaScript — it's a local-only focus timer; nothing runs on a server.</p></noscript>
   <!-- STATUS: period timer + credits + at-risk, all in one -->
@@ -514,13 +541,15 @@
 
   <div class="pane" data-pane="predet">
     <p class="emnote" id="predetNote">Queue sessions ahead of time — once today's window opens, the next due one starts on its own, no tap needed. Requires a saved plan.</p>
-    <div class="pdform">
-      <div><label for="pd_time">Time</label><input id="pd_time" type="time" value="09:00" /></div>
-      <div><label for="pd_intent">Task</label><input id="pd_intent" placeholder="e.g. draft section 2 of the report" /></div>
-    </div>
-    <div class="pdform2">
-      <label class="chk"><input id="pd_repeat" type="checkbox" /><span>Repeat daily</span></label>
-      <button id="pd_add" class="primary" type="button">Queue</button>
+    <div class="pdgroup">
+      <div class="pdform">
+        <div><label for="pd_time">Time</label><input id="pd_time" type="time" value="09:00" /></div>
+        <div><label for="pd_intent">Task</label><input id="pd_intent" placeholder="e.g. draft section 2 of the report" /></div>
+      </div>
+      <div class="pdform2">
+        <label class="chk"><input id="pd_repeat" type="checkbox" /><span>Repeat daily</span></label>
+        <button id="pd_add" class="primary" type="button">Queue</button>
+      </div>
     </div>
     <div class="divider" style="margin:24px auto"></div>
     <div id="predetList" class="pdlist"></div>
@@ -537,12 +566,14 @@
   </div>
 
   <div class="pane" data-pane="backup">
-    <div class="actions">
-      <button id="export" class="ghost">Export file</button>
-      <button id="import" class="ghost">Import file</button>
-      <input id="importFile" type="file" accept="application/json,.json" hidden />
+    <div class="bkgroup">
+      <div class="actions">
+        <button id="export" class="ghost">Export file</button>
+        <button id="import" class="ghost">Import file</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden />
+      </div>
+      <div class="hint">Data lives only on this device. Export a JSON backup, or import it on another device to move your credits, plan, and ledger across.</div>
     </div>
-    <div class="hint">Data lives only on this device. Export a JSON backup, or import it on another device to move your credits, plan, and ledger across.</div>
   </div>
 </dialog>
 
@@ -730,6 +761,8 @@ let wakeLock=null;
 async function lockScreen(){ unlockScreen(); try{ wakeLock=await navigator.wakeLock?.request("screen"); }catch(e){} }
 function unlockScreen(){ try{ wakeLock?.release(); }catch(e){} wakeLock=null; }
 function setBtns(){ const cs=canStart(state,new Date());
+  document.body.classList.toggle("session-live", phase!==null);        // hide the FAB while a session runs
+  if(phase!==null) document.body.classList.remove("compose-open");
   $("cancelBlock").disabled = phase===null;
   $("phaseTag").textContent = phase==="work" ? "● focusing" : phase==="break" ? "○ recovering — walk, look away" : "";
   const cta=$("primaryCta"), bar=$("ctaBar"), intentEl=$("intent");   // contextual primary: Set plan → composer (title + Start session), hidden mid-session
@@ -1169,17 +1202,23 @@ function showTab(tab){                                                          
   document.querySelectorAll("#sheet .pane").forEach(p=>p.classList.toggle("active", p.dataset.pane===tab));
 }
 function stepTab(dir){ const i=TAB_ORDER.indexOf(curTab); showTab(TAB_ORDER[(i+dir+TAB_ORDER.length)%TAB_ORDER.length]); }
-function openSheet(tab){ fillSettings(); renderRest(); renderPredet(); showTab(tab||"plan"); const s=$("sheet"); if(!s.open) s.showModal(); }  // hydrate, select tab, present
+function openSheet(tab){ closeCompose(); fillSettings(); renderRest(); renderPredet(); showTab(tab||"plan"); const s=$("sheet"); if(!s.open) s.showModal(); }  // hydrate, select tab, present
+// compact composer: collapsed to a FAB, expands on tap; a tap outside or Escape closes it
+function openCompose(){ document.body.classList.add("compose-open"); if(getComputedStyle($("intent")).display!=="none") setTimeout(()=>$("intent").focus(),80); }
+function closeCompose(){ document.body.classList.remove("compose-open"); }
+$("fab").onclick=()=>{ if(!state.startedAt) openSheet("plan"); else openCompose(); };   // no plan → straight to Plan; otherwise expand the composer
+document.addEventListener("click",e=>{ if(document.body.classList.contains("compose-open") && !e.target.closest("#ctaBar") && !e.target.closest("#fab")) closeCompose(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeCompose(); });
 $("tabPrev").onclick=()=>stepTab(-1); $("tabNext").onclick=()=>stepTab(1);
 $("settingsBtn").onclick=()=>openSheet("plan");
-$("primaryCta").onclick=()=>{ if(!state.startedAt) openSheet("plan"); else startBlock(); };  // first run → set the plan; once the clock runs it starts sessions
+$("primaryCta").onclick=()=>{ if(!state.startedAt) openSheet("plan"); else { startBlock(); closeCompose(); } };  // first run → set the plan; once the clock runs it starts sessions
 $("log").addEventListener("click", e=>{                                  // click a completed session to add/edit its description (commit body)
   const row=e.target.closest("[data-t]"); if(!row) return;
   const entry=(state.log||[]).find(x=>x.t===+row.dataset.t); if(!entry) return;
   const d=prompt("Note for this session (optional):", entry.desc||""); if(d===null) return;
   entry.desc=d.trim(); commit(); _logSig=""; renderLog(); });
 $("cancelBlock").onclick=cancelBlock;
-$("intent").addEventListener("keydown",e=>{ if(e.key==="Enter" && !$("primaryCta").disabled) startBlock(); });
+$("intent").addEventListener("keydown",e=>{ if(e.key==="Enter" && !$("primaryCta").disabled){ startBlock(); closeCompose(); } });
 $("export").onclick=exportData;
 $("import").onclick=()=>$("importFile").click();
 $("importFile").onchange=(e)=>{ if(e.target.files[0]) importData(e.target.files[0]); e.target.value=""; };
