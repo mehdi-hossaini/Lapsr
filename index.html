@@ -256,7 +256,7 @@
   .chk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex:none}
   /* ===== bottom sheets — native <dialog>, action-only; the page stays a scrollable billboard ===== */
   dialog.sheet{border:0;background:var(--panel);color:var(--txt);width:100%;max-width:600px;margin:0 auto;position:fixed;inset:auto 0 0 0;
-    padding:10px 22px calc(28px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;max-height:88vh;overflow:auto;box-shadow:0 -10px 34px rgba(0,0,0,.30)}
+    padding:10px 22px 0;border-radius:20px 20px 0 0;max-height:88vh;overflow:auto;box-shadow:0 -10px 34px rgba(0,0,0,.30)}
   @media(max-width:680px){ dialog.sheet{max-height:70vh} }
   dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   @keyframes sheetUp{from{transform:translateY(101%)}to{transform:translateY(0)}}
@@ -277,7 +277,10 @@
     font-size:20px;line-height:1;cursor:pointer;padding:8px;border-radius:50%;transition:color .15s,transform .2s}
   .gear:hover{color:var(--accent);transform:rotate(30deg)}
   /* one tab title at a time + prev/next — sidesteps any "N tabs don't fit the width" problem entirely */
-  .tabs{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 24px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  /* tab nav lives at the BOTTOM of the sheet as a sticky bar — thumb-reachable while the pane scrolls */
+  .tabs{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;bottom:0;z-index:2;
+    margin:18px -22px 0;padding:14px 22px calc(14px + env(safe-area-inset-bottom));
+    background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -10px 22px -12px rgba(0,0,0,.4)}
   .tabtitle{color:var(--accent);font:500 12px/1 'Inter',sans-serif;letter-spacing:.16em;text-transform:uppercase}
   .tabnav{background:none;border:0;color:var(--dim);font-size:19px;line-height:1;cursor:pointer;padding:6px 12px;border-radius:4px;transition:color .15s}
   .tabnav:hover{color:var(--accent)}
@@ -308,6 +311,36 @@
   #primaryCta::after{content:"";width:7px;height:7px;border-top:2px solid currentColor;border-right:2px solid currentColor;
     transform:rotate(45deg) translateX(-1px);flex-shrink:0}
   #primaryCta:disabled::after{opacity:.5}
+  body.no-plan .goal{display:none}   /* goals live in Plan — don't nag about them in execution mode */
+  /* ===== instant-execution panel — MOBILE: tap a duration tile → a live countdown ring ===== */
+  .g-instant{text-align:center}
+  #instTask{width:100%;background:var(--field);border:1px solid var(--line);color:var(--txt);border-radius:999px;
+    padding:12px 18px;text-align:center;margin-bottom:16px;font:inherit}
+  #instTask:focus{outline:none;border-color:var(--accent)}
+  .inst-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .inst-tile{display:flex;flex-direction:column;align-items:center;gap:1px;padding:18px 6px;cursor:pointer;
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+    transition:transform .14s cubic-bezier(.16,1,.3,1),border-color .14s,box-shadow .14s}
+  .inst-tile:hover{border-color:var(--accent)}
+  .inst-tile:active{transform:scale(.95)}
+  .inst-tile .m{font:500 30px/1 'JetBrains Mono',ui-monospace,monospace;color:var(--txt);font-variant-numeric:tabular-nums}
+  .inst-tile .u{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+  .inst-tile .k{margin-top:7px;font-size:10px;letter-spacing:.06em;color:var(--accent)}
+  .inst-hint{margin-top:16px;font-size:12px;color:var(--dim);line-height:1.6}
+  .inst-run{display:none;flex-direction:column;align-items:center;gap:22px}
+  body.free-live .inst-run{display:flex}
+  body.free-live .inst-idle{display:none}
+  .inst-ringwrap{position:relative;width:196px;height:196px}
+  .inst-ring{width:100%;height:100%}
+  .inst-ring .ring-bg{fill:none;stroke:color-mix(in srgb,var(--line) 70%,transparent);stroke-width:5}
+  .inst-ring .ring-fg{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;
+    stroke-dasharray:339.292;stroke-dashoffset:339.292;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .3s linear}
+  .inst-ringmid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+  .inst-time{font:500 42px/1 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  .inst-runtask{font-size:12px;color:var(--dim);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .inst-barwrap{display:none}
+  /* while a metered session runs, lock the instant launcher (one session at a time) */
+  body.session-live:not(.free-live) .inst-idle{opacity:.4;pointer-events:none;filter:saturate(.4)}
   /* compact launcher (FAB): the composer collapses to one small accent button and expands on tap —
      nothing permanent sits at the bottom stealing attention. Desktop keeps the in-flow composer. */
   .fab{display:none}
@@ -326,7 +359,10 @@
     body:not(.compose-open) .ctabar{opacity:0;transform:translateY(8px) scale(.8);pointer-events:none}
     body.compose-open .ctabar{opacity:1;transform:none}
     main{padding-bottom:96px}
+    /* no plan yet → lead with the instant panel: drop the metered dashboard, focus card, chart and FAB */
+    body.no-plan .g-status,body.no-plan .g-chart,body.no-plan .g-focus,body.no-plan .fab{display:none}
   }
+  body.free-live .g-focus{display:none}   /* a free session shows its live ring in the instant panel — hide the metered card's duplicate timer */
   /* desktop: one screen, psychology-led hierarchy.
      - Status becomes a condensed top strip: a dashboard glance, not a competing focal box
        (peripheral awareness of credits/risk without stealing attention from the one thing to do).
@@ -344,8 +380,8 @@
     main{display:none}
     header{flex:none;padding:14px 32px 2px;align-items:flex-start;text-align:left;margin:0;max-width:none}
     .hero-col{flex:1;min-height:0;max-width:none;width:100%;margin:0;padding:10px 24px 16px;
-      display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:auto 1fr 1fr;
-      grid-template-areas:"status status" "focus list" "focus chart";gap:14px}
+      display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:auto auto 1fr 1fr;
+      grid-template-areas:"instant instant" "status status" "focus list" "focus chart";gap:14px}
 
     /* status: condensed dashboard strip, not a tall competing box */
     .g-status{grid-area:status;display:flex;align-items:center;flex-wrap:wrap;gap:20px 48px;text-align:left;padding:28px 34px}
@@ -358,6 +394,25 @@
     .g-status .risk br{display:none}
     .countdown{font-size:26px}
     .stat .n{font-size:20px}
+
+    /* instant: a horizontal quick-launch strip — DESKTOP approach uses a progress BAR, not a ring */
+    .g-instant{grid-area:instant;display:flex;align-items:center;gap:18px;padding:12px 24px;text-align:left}
+    .g-instant h2{display:none}
+    .g-instant .inst-idle{display:flex;align-items:center;gap:14px;width:100%}
+    .g-instant #instTask{margin:0;flex:1;min-width:0;text-align:left;padding:9px 16px}
+    .g-instant .inst-tiles{display:flex;gap:10px}
+    .g-instant .inst-tile{flex-direction:row;align-items:baseline;gap:6px;padding:9px 16px;border-radius:999px;box-shadow:none}
+    .g-instant .inst-tile .m{font-size:17px}
+    .g-instant .inst-tile .u{font-size:9px}
+    .g-instant .inst-tile .k{display:none}
+    .g-instant .inst-run{flex-direction:row;align-items:center;gap:16px;width:100%}
+    .g-instant .inst-ringwrap{display:none}
+    .g-instant .inst-barwrap{display:flex;align-items:center;gap:14px;flex:1;min-width:0}
+    .g-instant .inst-bar{flex:1;height:8px;border-radius:999px;background:color-mix(in srgb,var(--line) 65%,transparent);overflow:hidden;min-width:120px}
+    .g-instant .inst-bar > i{display:block;height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 40%,transparent),var(--accent));transition:width .3s linear}
+    .g-instant .inst-bartime{font:500 22px/1 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;flex:none}
+    .g-instant .inst-runtask{font-size:12px;color:var(--dim);flex:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .g-instant #instStop{flex:none}
 
     /* focus session: the one card that's visually different — isolated as the primary choice */
     .g-focus{grid-area:focus;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
@@ -407,6 +462,36 @@
 <button id="fab" class="fab" type="button" aria-label="Start a focus session"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
 <div class="hero-col">
   <noscript><p style="text-align:center">Lapsr needs JavaScript — it's a local-only focus timer; nothing runs on a server.</p></noscript>
+
+  <!-- INSTANT: one-tap free focus (no plan, no credits) — its own launcher + live progress -->
+  <section class="panel g-instant" id="instantPanel">
+    <h2>Focus now</h2>
+    <div class="inst-idle">
+      <input id="instTask" placeholder="what are you focusing on? (optional)" aria-label="Instant focus task" />
+      <div class="inst-tiles" id="instTiles" role="group" aria-label="Pick a length to start focusing">
+        <button class="inst-tile" type="button" data-min="25"><span class="m">25</span><span class="u">min</span><span class="k">quick</span></button>
+        <button class="inst-tile" type="button" data-min="50"><span class="m">50</span><span class="u">min</span><span class="k">deep work</span></button>
+        <button class="inst-tile" type="button" data-min="90"><span class="m">90</span><span class="u">min</span><span class="k">flow</span></button>
+      </div>
+      <div class="inst-hint">One tap — no plan, no credits, just focus. It logs when you finish.</div>
+    </div>
+    <div class="inst-run" aria-live="polite">
+      <div class="inst-ringwrap">
+        <svg class="inst-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-bg" cx="60" cy="60" r="54"/>
+          <circle class="ring-fg" id="instRingFg" cx="60" cy="60" r="54"/>
+        </svg>
+        <div class="inst-ringmid"><div class="inst-time" id="instTime">--:--</div><div class="inst-runtask" id="instRunTask"></div></div>
+      </div>
+      <div class="inst-barwrap">
+        <div class="inst-runtask" id="instRunTask2"></div>
+        <div class="inst-bar"><i id="instBarFill"></i></div>
+        <div class="inst-bartime" id="instTime2">--:--</div>
+      </div>
+      <button id="instStop" class="ghost" type="button">Stop</button>
+    </div>
+  </section>
+
   <!-- STATUS: period timer + credits + at-risk, all in one -->
   <section class="panel first g-status">
     <h2 id="periodLabel">This week</h2>
@@ -447,7 +532,7 @@
     <div id="blockTimer" class="blocktimer">--:--</div>
     <div class="ctabar" id="ctaBar">
       <input id="intent" placeholder="e.g. draft section 2 of the report" aria-label="Session title" />
-      <button id="primaryCta" class="primary">Set your plan</button>
+      <button id="primaryCta" class="primary">Start session</button>
     </div>
     <div class="actions" style="justify-content:flex-end">
       <button id="cancelBlock" class="ghost" disabled>Cancel</button>
@@ -509,11 +594,6 @@
 <dialog id="sheet" class="sheet">
   <form method="dialog" class="sheet-x"><button class="xbtn" aria-label="Close">✕</button></form>
   <div class="grab" aria-hidden="true"></div>
-  <div class="tabs" role="tablist">
-    <button type="button" class="tabnav" id="tabPrev" aria-label="Previous tab">‹</button>
-    <span class="tabtitle" id="tabTitle" role="tab" aria-live="polite">Plan</span>
-    <button type="button" class="tabnav" id="tabNext" aria-label="Next tab">›</button>
-  </div>
 
   <div class="pane" data-pane="plan">
     <label for="s_goal">Goal this period</label>
@@ -574,6 +654,12 @@
       </div>
       <div class="hint">Data lives only on this device. Export a JSON backup, or import it on another device to move your credits, plan, and ledger across.</div>
     </div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button type="button" class="tabnav" id="tabPrev" aria-label="Previous tab">‹</button>
+    <span class="tabtitle" id="tabTitle" role="tab" aria-live="polite">Plan</span>
+    <button type="button" class="tabnav" id="tabNext" aria-label="Next tab">›</button>
   </div>
 </dialog>
 
@@ -741,6 +827,7 @@ function importData(file){
 
 // ===== focus session — two-phase work→break, drift-free =====
 let phase=null, phaseEndTs=null, ticker=null, curIntent="", curT0=0;
+let freeDur=50, curFree=false;   // execution-first: with no plan, start a free session of freeDur minutes — logged, but no credit/window/stake
 const $=id=>document.getElementById(id);
 const BASE_TITLE=document.title;
 
@@ -762,6 +849,7 @@ async function lockScreen(){ unlockScreen(); try{ wakeLock=await navigator.wakeL
 function unlockScreen(){ try{ wakeLock?.release(); }catch(e){} wakeLock=null; }
 function setBtns(){ const cs=canStart(state,new Date());
   document.body.classList.toggle("session-live", phase!==null);        // hide the FAB while a session runs
+  document.body.classList.toggle("free-live", phase!==null && curFree); // an instant/free session is the one running
   if(phase!==null) document.body.classList.remove("compose-open");
   $("cancelBlock").disabled = phase===null;
   $("phaseTag").textContent = phase==="work" ? "● focusing" : phase==="break" ? "○ recovering — walk, look away" : "";
@@ -771,20 +859,43 @@ function setBtns(){ const cs=canStart(state,new Date());
   else { bar.style.display=""; intentEl.style.display=""; cta.textContent="Start session"; cta.disabled=!cs.ok; } }
 function startBlock(auto){                                            // auto (string, optional): a predetermined session firing on its own, no click gesture
   if(phase!==null) return;                                           // a session is already running — never overwrite it (guards reload races + double-taps)
-  const cs=canStart(state, new Date());
-  if(!cs.ok){ if(auto==null) alert(cs.msg); return; }
+  const free = !state.startedAt;                                     // no plan saved → execution-first free session (never gated), no credit/window/stake
+  if(!free){ const cs=canStart(state, new Date()); if(!cs.ok){ if(auto==null) alert(cs.msg); return; } }
+  curFree=free;
   curIntent = auto!=null ? auto : $("intent").value.trim();
   if(auto==null && !curIntent && !confirm("Start without naming the task? Naming it boosts follow-through.")) return;
   if(auto==null){                                                     // gesture-gated bits only apply to a real click
     if(window.Notification && Notification.permission==="default") Notification.requestPermission();  // ask inside the click gesture
     beep(0);                                                           // unlock AudioContext inside the gesture (autoplay policy)
   }
-  phase="work"; curT0=Date.now(); phaseEndTs=curT0+state.cfg.block*60*1000;
-  state.session={phase,endTs:phaseEndTs,intent:curIntent,t0:curT0}; commit();   // persist so screen-off/reload resumes
+  const dur = free ? freeDur : state.cfg.block;                       // free sessions use the chip-picked length; metered sessions use the plan's
+  phase="work"; curT0=Date.now(); phaseEndTs=curT0+dur*60*1000;
+  state.session={phase,endTs:phaseEndTs,intent:curIntent,t0:curT0,free}; commit();   // persist so screen-off/reload resumes
   lockScreen();
   $("intent").value=curIntent;
   $("blockHint").textContent = auto!=null ? "Auto-started: "+curIntent : (curIntent ? "Now: "+curIntent : "Focused, single-task work.");
   setBtns(); tick(); ticker=setInterval(tick,250);
+}
+function startInstant(min){                                            // instant panel: one-tap free session, ALWAYS free (even if a plan is active)
+  if(phase!==null) return;                                            // one session at a time
+  curFree=true; curIntent=$("instTask").value.trim();
+  if(window.Notification && Notification.permission==="default") Notification.requestPermission();
+  beep(0);                                                            // unlock audio inside the tap gesture
+  phase="work"; curT0=Date.now(); phaseEndTs=curT0+min*60*1000;
+  state.session={phase,endTs:phaseEndTs,intent:curIntent,t0:curT0,free:true}; commit();
+  lockScreen();
+  $("instTask").value=""; $("intent").value=curIntent;
+  $("blockHint").textContent = curIntent?("Now: "+curIntent):"Focused, single-task work.";
+  setBtns(); tick(); ticker=setInterval(tick,250);
+}
+function updInstant(){                                                 // drive the instant panel's ring (mobile) + bar (desktop) while a free session runs
+  if(phase===null || !curFree) return;
+  const total=Math.max(1,phaseEndTs-curT0), left=Math.max(0,phaseEndTs-Date.now()), el=1-left/total;
+  const fg=$("instRingFg"); if(fg) fg.style.strokeDashoffset=(339.292*(1-el)).toFixed(1);   // ring fills as time elapses
+  const bar=$("instBarFill"); if(bar) bar.style.width=(el*100).toFixed(1)+"%";
+  const t=Math.floor(left/1000), mm=`${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`;
+  for(const id of ["instTime","instTime2"]){ const e=$(id); if(e) e.textContent=mm; }
+  for(const id of ["instRunTask","instRunTask2"]){ const e=$(id); if(e) e.textContent=curIntent||"focus"; }
 }
 function startBreak(anchor){ phase="break"; phaseEndTs=(anchor||Date.now())+state.cfg.brk*60*1000;  // anchor = true work-end ts when resuming, else now
   state.session={phase,endTs:phaseEndTs,intent:""}; commit(); lockScreen();
@@ -792,7 +903,7 @@ function startBreak(anchor){ phase="break"; phaseEndTs=(anchor||Date.now())+stat
 function endTimer(){ clearInterval(ticker); ticker=null; phase=null; phaseEndTs=null; curT0=0; state.session=null; saveLocal(state); $("blockTimer").textContent="--:--"; document.title=BASE_TITLE; unlockScreen(); setBtns(); }
 function resumeSession(){   // restore an in-progress session after reload/sleep using its absolute end-timestamp
   const s=state.session; if(!s) return;
-  curIntent=s.intent||""; curT0=s.t0||0;
+  curIntent=s.intent||""; curT0=s.t0||0; curFree=!!s.free;
   if(s.endTs-Date.now()>0){ phase=s.phase; phaseEndTs=s.endTs; lockScreen();
     $("blockHint").textContent = s.phase==="break" ? "Recover — walk, look away." : (curIntent?("Now: "+curIntent):"Focused work.");
     setBtns(); tick(); ticker=setInterval(tick,250); }
@@ -800,17 +911,20 @@ function resumeSession(){   // restore an in-progress session after reload/sleep
   else { state.session=null; saveLocal(state); }  // break already over
 }
 function cancelBlock(){ const b=phase==="break"; endTimer(); $("blockHint").textContent = b?"Break skipped.":"Cancelled — no credit claimed."; }
-function completeWork(anchor){ const now=Date.now(); state.spent+=1; state.marks.push({t:now,t0:curT0||now,spent:state.spent,intent:curIntent});
-  state.log.push({t:now,intent:curIntent}); if(state.log.length>200) state.log=state.log.slice(-200);  // cap history
+function completeWork(anchor){ const now=Date.now();
+  state.log.push({t:now,intent:curIntent,...(curFree?{free:true}:{})}); if(state.log.length>200) state.log=state.log.slice(-200);  // history always logs (free or metered)
+  if(!curFree){ state.spent+=1; state.marks.push({t:now,t0:curT0||now,spent:state.spent,intent:curIntent}); }   // only metered sessions consume a credit + hit the chart
   commit(); render(); refreshChart();
   $("intent").value=""; curIntent="";
-  beep(2); notify(state.cfg.breakOn? "Session done — credit claimed. Take the break." : "Session done — credit claimed.");
+  beep(2); notify(curFree? "Session done — logged." : (state.cfg.breakOn? "Session done — credit claimed. Take the break." : "Session done — credit claimed."));
+  if(curFree){ endTimer(); $("blockHint").textContent="Session logged. Start another when you're ready."; return; }   // free path: no credit, no break math
   if(creditsRemaining(state)===0){ endTimer(); $("blockHint").textContent="All credits claimed. Rest until the period resets."; return; }
   if(state.cfg.breakOn){ startBreak(anchor); }                       // opt-in break; otherwise end and let the user start the next when ready
   else { endTimer(); $("blockHint").textContent="Credit claimed. Start the next session when you're ready."; } }
 function tick(){ const left=phaseEndTs-Date.now(), t=Math.max(0,Math.floor(left/1000));
   const mmss=`${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`;
   $("blockTimer").textContent=mmss;
+  updInstant();                                                      // mirror into the instant panel's ring/bar when it's a free session
   document.title=(phase==="break"?"break ":"")+mmss+" · Lapsr";     // countdown visible from any tab
   if(left<=0){ if(phase==="work") completeWork(); else { endTimer(); beep(1); notify("Break over — back to it."); } } }
 
@@ -917,8 +1031,9 @@ function renderLog(){
   el.innerHTML = keys.map(k=>{
     const rows=groups.get(k).slice().reverse();
     const lost=Math.round(dayForfeitKr(k));
-    const tally = `<span class="dh-n">${rows.length} claimed</span>` +
-      (lost>0 ? `<span class="dh-lost">−${lost} kr</span>` : `<span class="dh-ok">0 kr lost</span>`);
+    const tally = state.startedAt
+      ? `<span class="dh-n">${rows.length} claimed</span>` + (lost>0 ? `<span class="dh-lost">−${lost} kr</span>` : `<span class="dh-ok">0 kr lost</span>`)
+      : `<span class="dh-n">${rows.length} done</span>`;   // no plan → no credits/forfeit, just a count
     const items = rows.map(e=>{
       const title = e.intent ? escapeHtml(e.intent) : '<span class="unnamed">unnamed session</span>';
       const desc = e.desc ? `<span class="desc">${escapeHtml(e.desc)}</span>` : '';
@@ -935,6 +1050,7 @@ function setMeter(id, pct, pctText, resetText){ const f=$(id+"Fill"); f.style.wi
   $(id+"Pct").textContent=pctText; $(id+"Reset").textContent=resetText; }
 function render(){
   const now=new Date(), pending=!!state.startedAt && state.startedAt>now.getTime(), started=!!state.startedAt && !pending;
+  document.body.classList.toggle("no-plan", !state.startedAt);   // execution-first home: hide the metered dashboard until a plan exists
   if(started){
     // autonomous period reset + forfeiture (no button, no undo)
     if(state.periodKey!==periodBounds(state.cfg,now,state.startedAt).key){ const before=state.wasted; state=normalize(state); if(state.wasted!==before) commit(); fillSettings(); refreshChart(); }
@@ -982,13 +1098,14 @@ function render(){
     else { $("windowInfo").textContent=`Window closed · reopens ${fmtClock(ws.next)}`; }
   } else {
     setMeter("uPer", 0, "0% used", "—"); setMeter("uWin", 0, "0% used", "—");
-    $("windowInfo").textContent = pending ? `Sessions begin ${new Date(state.startedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})}.` : "Sessions begin once you save your plan.";
+    $("windowInfo").textContent = pending ? `Sessions begin ${new Date(state.startedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})}.` : "Pick a length and start — no setup needed.";
   }
   const g=$("goalLine");
   if(state.goal){ g.className="goal"; g.innerHTML='<span class="lab">Goal · '+label.toLowerCase()+'</span>'+escapeHtml(state.goal); }
   else { g.className="goal empty"; g.textContent="No goal set — add one in Plan. Each completed session is a step toward it."; }
   const perKr=state.cfg.budget? state.cfg.stake/state.cfg.budget : 0;   // money secured = credits already claimed × per-credit stake (can't be forfeited now)
-  $("streak").textContent = (started && state.spent>0) ? Math.round(perKr*state.spent)+" kr secured" : "";
+  if(!state.startedAt){ const t0=new Date().setHours(0,0,0,0), n=(state.log||[]).filter(e=>e.t>=t0).length; $("streak").textContent = n? n+(n===1?" session today":" sessions today") : ""; }
+  else $("streak").textContent = state.spent>0 ? Math.round(perKr*state.spent)+" kr secured" : "";
   renderLog();
   renderRest();
   renderStatus();
@@ -999,7 +1116,7 @@ function renderStatus(){
   line.className="sline"+(phase==="work"?" live":phase==="break"?" brk":"");
   if(phase==="work"){ $("stState").textContent="Focusing"; task.textContent=curIntent?"— "+curIntent:""; }
   else if(phase==="break"){ $("stState").textContent="On break"; task.textContent="— recover, look away"; }
-  else { $("stState").textContent=canStart(state,new Date()).ok?"Ready":"Idle"; task.textContent=""; }
+  else { $("stState").textContent = !state.startedAt ? "Ready" : (canStart(state,new Date()).ok?"Ready":"Idle"); task.textContent=""; }
 
   if(!state.startedAt || state.startedAt>Date.now()){            // no plan saved yet, or its start day hasn't arrived — don't fake a window
     $("stOpen").textContent="--:--"; $("stClose").textContent="--:--";
@@ -1206,12 +1323,15 @@ function openSheet(tab){ closeCompose(); fillSettings(); renderRest(); renderPre
 // compact composer: collapsed to a FAB, expands on tap; a tap outside or Escape closes it
 function openCompose(){ document.body.classList.add("compose-open"); if(getComputedStyle($("intent")).display!=="none") setTimeout(()=>$("intent").focus(),80); }
 function closeCompose(){ document.body.classList.remove("compose-open"); }
-$("fab").onclick=()=>{ if(!state.startedAt) openSheet("plan"); else openCompose(); };   // no plan → straight to Plan; otherwise expand the composer
+$("fab").onclick=openCompose;   // metered composer (plan required); instant focus lives in its own panel
+$("instTiles").addEventListener("click",e=>{ const b=e.target.closest(".inst-tile"); if(b) startInstant(+b.dataset.min); });
+$("instStop").onclick=cancelBlock;
+$("instTask").addEventListener("keydown",e=>{ if(e.key==="Enter") startInstant(50); });   // Enter = default 50-min block
 document.addEventListener("click",e=>{ if(document.body.classList.contains("compose-open") && !e.target.closest("#ctaBar") && !e.target.closest("#fab")) closeCompose(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeCompose(); });
 $("tabPrev").onclick=()=>stepTab(-1); $("tabNext").onclick=()=>stepTab(1);
 $("settingsBtn").onclick=()=>openSheet("plan");
-$("primaryCta").onclick=()=>{ if(!state.startedAt) openSheet("plan"); else { startBlock(); closeCompose(); } };  // first run → set the plan; once the clock runs it starts sessions
+$("primaryCta").onclick=()=>{ startBlock(); closeCompose(); };  // always start (free if no plan, metered if a plan is active)
 $("log").addEventListener("click", e=>{                                  // click a completed session to add/edit its description (commit body)
   const row=e.target.closest("[data-t]"); if(!row) return;
   const entry=(state.log||[]).find(x=>x.t===+row.dataset.t); if(!entry) return;
