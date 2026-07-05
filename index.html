@@ -78,6 +78,10 @@
     --bg:#fbf1c7; --panel:#fbf1c7; --line:#d5c4a1; --txt:#3c3836; --dim:#7c6f64;
     --field:#f9f5d7; --accent:#d65d0e; --accent-dk:#af3a03; --on-accent:#fbf1c7; --danger:#cc241d;
     --surface:color-mix(in srgb,var(--bg) 86%,#fff); --shadow:0 1px 2px rgba(60,56,54,.06),0 10px 28px rgba(60,56,54,.10);
+    /* alternating section hues — odd sections keep the base surface, even ones take a faint distinct tint */
+    --sec-2:color-mix(in srgb,#458588 11%,var(--surface)); --sec-4:color-mix(in srgb,#8f3f71 11%,var(--surface)); --sec-6:color-mix(in srgb,#689d6a 11%,var(--surface));
+    /* liquid glass — translucent frosted surfaces + bright top edge, used on a few floating controls */
+    --glass-bg:color-mix(in srgb,var(--panel) 72%,transparent); --glass-hi:color-mix(in srgb,#fff 55%,transparent); --glass-brd:color-mix(in srgb,#fff 40%,var(--line));
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -86,6 +90,8 @@
       --bg:#282828; --panel:#282828; --line:#3c3836; --txt:#ebdbb2; --dim:#928374;
       --field:#32302f; --accent:#fe8019; --accent-dk:#d65d0e; --on-accent:#282828; --danger:#fb4934;
       --shadow:0 1px 3px rgba(0,0,0,.15),0 8px 24px rgba(0,0,0,.18);
+      --sec-2:color-mix(in srgb,#83a598 19%,var(--surface)); --sec-4:color-mix(in srgb,#d3869b 18%,var(--surface)); --sec-6:color-mix(in srgb,#8ec07c 18%,var(--surface));
+      --glass-bg:color-mix(in srgb,var(--panel) 58%,transparent); --glass-hi:color-mix(in srgb,#fff 12%,transparent); --glass-brd:color-mix(in srgb,#fff 12%,var(--line));
     }
   }
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -103,6 +109,11 @@
   .hero-col{max-width:600px;margin:0 auto;padding:24px 32px 24px;width:100%;display:flex;flex-direction:column;background:var(--bg)}
   .panel{padding:56px 4px;border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
   .panel.first{border-top:0;text-align:center}
+  /* section colour variants: 1·3·5 stay base, 2 & 4 take faint distinct hues so the stack isn't one flat colour.
+     Specificity beats the plain .panel background rules in both the mobile and desktop media queries. */
+  .hero-col > .panel:nth-of-type(2){background:var(--sec-2)}
+  .hero-col > .panel:nth-of-type(4){background:var(--sec-4)}
+  .moreinfo .panel:nth-of-type(2){background:var(--sec-2)}
   @media(max-width:680px){ header{padding:56px 22px 12px} main{padding:16px 22px 88px} .hero-col{padding:16px 22px 16px} .panel{padding:48px 2px} }
   /* mobile/tablet: make each section's START unmistakable — an editorial numbered eyebrow + a rule that
      fades to the right, in the one ink accent. Premium separation through type and rhythm, not cards. */
@@ -234,14 +245,15 @@
   details summary{cursor:pointer;color:var(--dim);font-size:12px;letter-spacing:.04em}
   /* collapsed info sections (How it works / FAQ) — a compact "show more" toggle, expands on tap */
   .moreinfo{border:0;margin:2px 0}
-  .moreinfo > summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;
-    margin:6px auto;padding:14px;color:var(--dim);font:500 11px/1 'Inter',system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase}
+  /* SEO/first-visit toggle — kept in the DOM for crawlers, but deliberately quiet so it doesn't pull the user's eye */
+  .moreinfo > summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+    margin:4px auto;padding:8px;color:var(--dim);opacity:.55;font:400 11px/1 'Inter',system-ui,sans-serif;letter-spacing:.02em}
   .moreinfo > summary::-webkit-details-marker{display:none}
-  .moreinfo > summary::after{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
+  .moreinfo > summary::after{content:"";width:5px;height:5px;border-right:1px solid currentColor;border-bottom:1px solid currentColor;
     transform:rotate(45deg);margin-top:-3px;transition:transform .2s}
   .moreinfo[open] > summary::after{transform:rotate(-135deg);margin-top:2px}
-  .moreinfo > summary:hover{color:var(--accent)}
-  .moreinfo[open] > summary{margin-bottom:16px}
+  .moreinfo > summary:hover{color:var(--accent);opacity:1}
+  .moreinfo[open] > summary{margin-bottom:16px;opacity:.8}
   .logempty{color:var(--dim);font-size:13px}
   .streak{float:right;color:var(--accent);letter-spacing:.12em}
   .goal{margin:0 0 20px;font-size:14px;color:var(--txt);line-height:1.5}
@@ -265,8 +277,10 @@
   .chk{display:flex;align-items:center;gap:9px;cursor:pointer;color:var(--txt);font-size:13px;padding:2px 0 6px}
   .chk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex:none}
   /* ===== bottom sheets — native <dialog>, action-only; the page stays a scrollable billboard ===== */
-  dialog.sheet{border:0;background:var(--panel);color:var(--txt);width:100%;max-width:600px;margin:0 auto;position:fixed;inset:auto 0 0 0;
-    padding:10px 22px 0;border-radius:20px 20px 0 0;max-height:88vh;overflow:auto;box-shadow:0 -10px 34px rgba(0,0,0,.30)}
+  dialog.sheet{border:0;background:color-mix(in srgb,var(--panel) 85%,transparent);color:var(--txt);width:100%;max-width:600px;margin:0 auto;position:fixed;inset:auto 0 0 0;
+    padding:10px 22px 0;border-radius:20px 20px 0 0;max-height:88vh;overflow:auto;border-top:1px solid var(--glass-brd);
+    backdrop-filter:blur(24px) saturate(1.5);-webkit-backdrop-filter:blur(24px) saturate(1.5);
+    box-shadow:inset 0 1px 0 var(--glass-hi),0 -10px 34px rgba(0,0,0,.30)}
   @media(max-width:680px){ dialog.sheet{max-height:70vh} }
   dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   @keyframes sheetUp{from{transform:translateY(101%)}to{transform:translateY(0)}}
@@ -283,14 +297,17 @@
   .sheet-x{display:flex;justify-content:flex-end;margin:0}
   .sheet-x .xbtn{background:none;border:0;color:var(--dim);font-size:17px;cursor:pointer;padding:4px 2px;line-height:1}
   .sheet-x .xbtn:hover{color:var(--accent)}
-  .gear{position:fixed;top:calc(14px + env(safe-area-inset-top));right:16px;z-index:48;background:none;border:0;color:var(--dim);
-    font-size:20px;line-height:1;cursor:pointer;padding:8px;border-radius:50%;transition:color .15s,transform .2s}
+  .gear{position:fixed;top:calc(14px + env(safe-area-inset-top));right:16px;z-index:48;color:var(--dim);
+    font-size:20px;line-height:1;cursor:pointer;padding:8px;border-radius:50%;transition:color .15s,transform .2s;
+    background:var(--glass-bg);border:1px solid var(--glass-brd);backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);
+    box-shadow:inset 0 1px 0 var(--glass-hi)}
   .gear:hover{color:var(--accent);transform:rotate(30deg)}
   /* one tab title at a time + prev/next — sidesteps any "N tabs don't fit the width" problem entirely */
   /* tab nav lives at the BOTTOM of the sheet as a sticky bar — thumb-reachable while the pane scrolls */
   .tabs{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;bottom:0;z-index:2;
     margin:18px -22px 0;padding:14px 22px calc(14px + env(safe-area-inset-bottom));
-    background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -10px 22px -12px rgba(0,0,0,.4)}
+    background:var(--glass-bg);backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4);
+    border-top:1px solid var(--glass-brd);box-shadow:inset 0 1px 0 var(--glass-hi),0 -10px 22px -12px rgba(0,0,0,.4)}
   .tabtitle{color:var(--accent);font:500 12px/1 'Inter',sans-serif;letter-spacing:.16em;text-transform:uppercase}
   .tabnav{background:none;border:0;color:var(--dim);font-size:19px;line-height:1;cursor:pointer;padding:6px 12px;border-radius:4px;transition:color .15s}
   .tabnav:hover{color:var(--accent)}
@@ -312,8 +329,10 @@
   .usage-row .r{font-size:11px;color:var(--dim);letter-spacing:.02em}
   /* contextual primary: composer bar (title + send) static in the sidebar on desktop; a sticky thumb-bar on mobile (one element, two homes) */
   .ctabar{display:flex;align-items:center;gap:0;width:100%;margin-top:28px;
-    background:var(--field);border:1px solid var(--line);border-radius:999px;padding:5px;
-    transition:border-color .2s ease}
+    background:var(--glass-bg);border:1px solid var(--glass-brd);border-radius:999px;padding:5px;
+    backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);
+    box-shadow:inset 0 1px 0 var(--glass-hi);
+    transition:border-color .2s ease,box-shadow .2s ease}
   .ctabar:focus-within{border-color:var(--accent)}
   .ctabar input{flex:1;width:auto;min-width:0;background:transparent;border:none;border-radius:999px;padding:11px 18px}
   .ctabar input:focus{outline:none;box-shadow:none}
@@ -329,7 +348,9 @@
   #instTask:focus{outline:none;border-color:var(--accent)}
   .inst-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .inst-tile{display:flex;flex-direction:column;align-items:center;gap:1px;padding:18px 6px;cursor:pointer;
-    background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+    background:color-mix(in srgb,var(--surface) 82%,transparent);border:1px solid var(--glass-brd);border-radius:16px;
+    backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);
+    box-shadow:inset 0 1px 0 var(--glass-hi),var(--shadow);
     transition:transform .14s cubic-bezier(.16,1,.3,1),border-color .14s,box-shadow .14s}
   .inst-tile:hover{border-color:var(--accent)}
   .inst-tile:active{transform:scale(.95)}
@@ -357,16 +378,17 @@
   @media(max-width:859px){
     .fab{display:flex;position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:51;
       width:56px;height:56px;border-radius:50%;align-items:center;justify-content:center;
-      background:var(--accent);color:var(--on-accent);border:0;padding:0;cursor:pointer;
-      box-shadow:0 10px 26px color-mix(in srgb,var(--accent) 42%,transparent),0 6px 16px rgba(0,0,0,.26);
+      background:color-mix(in srgb,var(--accent) 82%,transparent);color:var(--on-accent);border:0;padding:0;cursor:pointer;
+      backdrop-filter:blur(12px) saturate(1.6);-webkit-backdrop-filter:blur(12px) saturate(1.6);
+      box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 45%,transparent),0 10px 26px color-mix(in srgb,var(--accent) 42%,transparent),0 6px 16px rgba(0,0,0,.26);
       transition:transform .34s cubic-bezier(.16,1,.3,1),opacity .2s ease,box-shadow .2s ease}
     .fab:active{transform:scale(.9)}
     .fab:hover{box-shadow:0 12px 30px color-mix(in srgb,var(--accent) 54%,transparent),0 6px 16px rgba(0,0,0,.28)}
     body.compose-open .fab,body.session-live .fab{opacity:0;transform:scale(.4) rotate(-35deg);pointer-events:none}
     .ctabar{position:fixed;left:16px;right:16px;width:auto;bottom:calc(16px + env(safe-area-inset-bottom));margin:0;z-index:52;
       box-shadow:0 16px 38px rgba(0,0,0,.34);transform-origin:bottom right;will-change:transform,opacity;
-      transition:transform .42s cubic-bezier(.16,1,.3,1),opacity .26s ease}
-    body:not(.compose-open) .ctabar{opacity:0;transform:translateY(8px) scale(.8);pointer-events:none}
+      transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .3s ease}   /* springy pop that overshoots out of the FAB */
+    body:not(.compose-open) .ctabar{opacity:0;transform:translateY(14px) scale(.55);pointer-events:none}
     body.compose-open .ctabar{opacity:1;transform:none}
     main{padding-bottom:96px}
     /* no plan yet → lead with the instant panel: drop the metered dashboard, focus card, chart and FAB */
@@ -1078,8 +1100,9 @@ function renderLog(){
   el.innerHTML = keys.map(k=>{
     const rows=groups.get(k).slice().reverse();
     const lost=Math.round(dayForfeitKr(k));
+    const nClaimed=rows.filter(e=>!e.free).length, nFree=rows.length-nClaimed;   // metered sessions claim a credit; instant/free ones just log
     const tally = state.startedAt
-      ? `<span class="dh-n">${rows.length} claimed</span>` + (lost>0 ? `<span class="dh-lost">−${lost} kr</span>` : `<span class="dh-ok">0 kr lost</span>`)
+      ? `<span class="dh-n">${nClaimed} claimed</span>` + (nFree>0?`<span class="dh-ok">+${nFree} free</span>`:``) + (lost>0 ? `<span class="dh-lost">−${lost} kr</span>` : `<span class="dh-ok">0 kr lost</span>`)
       : `<span class="dh-n">${rows.length} done</span>`;   // no plan → no credits/forfeit, just a count
     const items = rows.map(e=>{
       const title = e.intent ? escapeHtml(e.intent) : '<span class="unnamed">unnamed session</span>';
@@ -1206,6 +1229,16 @@ function renderStatus(){
 function explainText(c){ const per=c.budget? (c.stake/c.budget).toFixed(0):0;
   const days=periodDays(c,new Date(),Date.now()), allot=days? c.budget/days : 0, perDay=allot<1?allot.toFixed(2):Math.round(allot);
   return `Each ${fmtDuration(c.periodMs)} you get <b>${c.budget} credits</b> (≈ <b>${perDay} per day</b>) and stake <b>${c.stake} kr</b>. Credits are only claimable inside a daily <b>${c.windowH||WINDOW_H}-hour window</b> from <b>${minToHHMM(c.windowStart)}</b>. Finish a ${c.block}-min session to claim one${c.breakOn?` (then a ${c.brk}-min break)`:``}. Any of the day's share you don't claim before the window closes is <b>forfeited for good</b> (~${per} kr each). At period end you only lose what you forfeited — claim everything and you owe <b>nothing</b>. Show up daily or lose it. You get <b>${c.restBudget||0} emergency day${(c.restBudget||0)===1?"":"s"}</b> a period — for genuine emergencies only, pre-committed (locked the night before); that day's share is set aside, never forfeited.`; }
+// read the plan form live (before Save) — so the explainer recomputes as you type, not just off the saved cfg
+function currentPlanCfg(){
+  const days=(rpStart&&rpEnd)? Math.round((rpEnd-rpStart)/86400000)+1 : Math.max(1,Math.round((state.cfg.periodMs||DEFAULTS.periodMs)/86400000));
+  const m=/^(\d{1,2}):(\d{2})$/.exec($("s_winstart").value), wm=m? Math.min(1439,Math.max(0,+m[1]*60+ +m[2])) : DEFAULTS.windowStart;
+  return { periodMs:days*86400000,
+    budget:Math.max(1,+$("s_budget").value||DEFAULTS.budget), block:Math.max(1,+$("s_block").value||DEFAULTS.block),
+    brk:Math.max(1,+$("s_brk").value||DEFAULTS.brk), breakOn:$("s_breakon").checked, stake:Math.max(0,+$("s_stake").value||0),
+    windowStart:wm, windowH:Math.max(1,Math.min(24,+$("s_winhours").value||DEFAULTS.windowH)), restBudget:Math.max(0,Math.min(99,+$("s_restbudget").value||0)) };
+}
+function updateExplain(){ $("explain").innerHTML=explainText(currentPlanCfg()); }
 // ---- period range picker: tap a start day, tap an end day — a calendar range, not two separate fields ----
 let rpMonth=new Date(), rpStart=null, rpEnd=null;
 function dateOnly(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
@@ -1229,6 +1262,7 @@ function rpRender(){
   const sub=$("rp_sub"), fmt=t=>new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"});
   sub.textContent = (sT!=null && eT!=null) ? `${fmt(sT)} – ${fmt(eT)} · ${Math.round((eT-sT)/86400000)+1} days`
     : sT!=null ? `${fmt(sT)} – pick an end date` : "Pick a start date, then an end date.";
+  updateExplain();   // period length feeds the explainer — keep it live as the range changes
 }
 $("rp_grid").addEventListener("click", e=>{
   const b=e.target.closest(".rp-day:not(.empty)"); if(!b) return;
@@ -1245,14 +1279,12 @@ function fillSettings(){
   rpStart=base; rpEnd=new Date(base.getTime()+(days-1)*86400000); rpMonth=new Date(rpStart.getFullYear(),rpStart.getMonth(),1);
   rpRender();
   $("s_budget").value=state.cfg.budget; $("s_block").value=state.cfg.block; $("s_brk").value=state.cfg.brk; $("s_breakon").checked=!!state.cfg.breakOn; $("s_stake").value=state.cfg.stake; $("s_winstart").value=minToHHMM(state.cfg.windowStart); $("s_winhours").value=state.cfg.windowH; $("s_restbudget").value=state.cfg.restBudget; $("s_goal").value=state.goal;
-  $("explain").innerHTML=explainText(state.cfg); }
+  updateExplain(); }
 function savePlan(){ const oldMs=state.cfg.periodMs, oldAnchor=state.startedAt, firstStart=!state.startedAt;
   state.goal=$("s_goal").value.trim();
   if(rpStart==null || rpEnd==null){ alert("Pick a period start and end date."); return; }
   const anchor=rpStart.getTime();                                              // clock anchors to the picked start day, not "now"
-  const periodMs=(Math.round((rpEnd-rpStart)/86400000)+1)*86400000;             // inclusive whole days
-  const m=/^(\d{1,2}):(\d{2})$/.exec($("s_winstart").value), wm=m? Math.min(1439,Math.max(0,+m[1]*60+ +m[2])) : DEFAULTS.windowStart;
-  state.cfg={ periodMs, budget:Math.max(1,+$("s_budget").value||DEFAULTS.budget), block:Math.max(1,+$("s_block").value||DEFAULTS.block), brk:Math.max(1,+$("s_brk").value||DEFAULTS.brk), breakOn:$("s_breakon").checked, stake:Math.max(0,+$("s_stake").value||0), windowStart:wm, windowH:Math.max(1,Math.min(24,+$("s_winhours").value||DEFAULTS.windowH)), restBudget:Math.max(0,Math.min(99,+$("s_restbudget").value||0)) };
+  state.cfg=currentPlanCfg();                                                  // same parse the live explainer uses (periodMs from the picked range)
   if(firstStart || anchor!==oldAnchor || state.cfg.periodMs!==oldMs){         // first save, or the picked start/length changed — re-bases the clock
     state.startedAt=anchor; state.spent=0; state.marks=[]; state.forfeitedCredits=0; state.restDays=[]; state.restedCredits=0;
     state.settledThrough=anchor; state.periodKey=periodBounds(state.cfg,new Date(),anchor).key;
@@ -1314,6 +1346,7 @@ function renderRest(){
 $("planRest").onclick=planRestDay;
 $("restList").addEventListener("click", e=>{ const p=e.target.closest("[data-k]"); if(p) unmarkRestDay(p.dataset.k); });
 $("save").onclick=savePlan;
+document.querySelector('.pane[data-pane=plan]').addEventListener("input", updateExplain);   // live: the explainer tracks every plan edit
 // ===== predetermined sessions — queue ahead of time, auto-start once due (checkPredetAuto runs every render tick) =====
 function checkPredetAuto(now){
   if(!state.startedAt || state.startedAt>now.getTime()) return;      // no active plan — nothing to fire
