@@ -132,6 +132,9 @@
     .moreinfo .panel:nth-of-type(2){background:var(--sec-2)}
   }
   @media(max-width:680px){ header{padding:56px 22px 12px} main{padding:16px 22px 88px} .hero-col{padding:16px 22px 16px} .panel{padding:48px 2px} }
+  /* controls respond instantly (no double-tap-zoom delay) and never trigger text selection mid-tap */
+  button,.inst-tile,.tabnav,.tabdot,.drawgrab,.restpill,.pddel,.gear,.rp-day{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+  dialog.sheet{overscroll-behavior:contain}   /* sheet scroll never chains into the page behind it */
   /* mobile/tablet: make each section's START unmistakable — an editorial numbered eyebrow + a rule that
      fades to the right, in the one ink accent. Premium separation through type and rhythm, not cards. */
   @media(max-width:859px){
@@ -413,6 +416,15 @@
   .inst-tile .u{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
   .inst-tile .k{margin-top:7px;font-size:10px;letter-spacing:.06em;color:var(--accent)}
   .inst-hint{margin-top:16px;font-size:12px;color:var(--dim);line-height:1.6}
+  /* mobile comfort — placed after the base rules above so the cascade can't undo it:
+     ≥16px fields (sub-16 makes iOS zoom the page on focus) + finger-sized touch targets */
+  @media(max-width:859px){
+    input,select,#instTask{font-size:16px}
+    .rp-day{height:38px}
+    .restpill{padding:8px 11px}
+    .pditem .pddel{padding:8px 10px}
+    .sheet-x .xbtn{padding:10px 12px}
+  }
   .inst-run{display:none;flex-direction:column;align-items:center;gap:22px}
   body.free-live .inst-run{display:flex}
   body.free-live .inst-idle{display:none}
@@ -1048,6 +1060,7 @@ function setBtns(){ const cs=canStart(state,new Date());
   else { bar.style.display=""; intentEl.style.display=""; cta.textContent="Start session"; cta.disabled=!cs.ok; } }
 function beginSession(min, intent, free){                              // the ONE session-start path — both entry points persist the same shape
   curFree=free; curIntent=intent;
+  navigator.vibrate?.(8);                                              // one soft tick — the session is on
   phase="work"; curT0=Date.now(); phaseEndTs=curT0+min*60*1000;
   state.session={phase,endTs:phaseEndTs,intent:curIntent,t0:curT0,free}; commit();   // persist so screen-off/reload resumes
   lockScreen();
@@ -1117,11 +1130,15 @@ function completeWork(anchor){ const now=Date.now();
   state.session=null;                                                // credit + session-clear persist in ONE commit — a crash between them could otherwise re-claim on resume
   commit(); render(); refreshChart();
   $("intent").value=""; curIntent="";
-  const nextOk=!wasFree && !allClaimed && !state.cfg.breakOn && canStart(state,new Date()).ok;   // offer "Start next" only when another credit is actually startable right now
-  beep(2); notify(wasFree? "Session done — logged."
-    : allClaimed? "Session done — credit claimed. All credits claimed this period."   // don't promise a break the ===0 branch never starts
-    : (state.cfg.breakOn? "Session done — credit claimed. Take the break." : "Session done — credit claimed."),
-    nextOk? [{action:"start",title:"Start next"}] : undefined);
+  const stale=!!anchor && (now-anchor>5*60000);                        // resumed a session that expired while the app was closed — the moment passed, a catch-up must be silent (reload beeps are startling, not informative)
+  if(!stale){
+    const nextOk=!wasFree && !allClaimed && !state.cfg.breakOn && canStart(state,new Date()).ok;   // offer "Start next" only when another credit is actually startable right now
+    beep(2); navigator.vibrate?.([12,60,12]);
+    notify(wasFree? "Session done — logged."
+      : allClaimed? "Session done — credit claimed. All credits claimed this period."   // don't promise a break the ===0 branch never starts
+      : (state.cfg.breakOn? "Session done — credit claimed. Take the break." : "Session done — credit claimed."),
+      nextOk? [{action:"start",title:"Start next"}] : undefined);
+  }
   if(wasFree){ endTimer(); $("blockHint").textContent="Session logged. Start another when you're ready."; return; }   // free path: no credit, no break math
   if(allClaimed){ endTimer(); $("blockHint").textContent="All credits claimed. Rest until the period resets."; return; }
   if(state.cfg.breakOn){ startBreak(anchor); }                       // opt-in break; otherwise end and let the user start the next when ready
