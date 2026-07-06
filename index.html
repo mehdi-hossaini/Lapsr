@@ -212,7 +212,7 @@
   .phasetag{color:var(--dim);font-size:12px;min-height:18px;letter-spacing:.06em}
   label{display:block;color:var(--dim);font-size:11px;letter-spacing:.04em;margin:16px 0 5px}
   /* textboxes: rounded to match the site, on a raised surface with a defined border so every field (incl. the goal box) reads clearly */
-  input,select{width:100%;background:var(--surface);border:1px solid color-mix(in srgb,var(--dim) 45%,var(--line));color:var(--txt);border-radius:12px;padding:12px 14px;font:inherit}
+  input,select{width:100%;background:var(--surface);border:1px solid color-mix(in srgb,var(--dim) 30%,var(--line));color:var(--txt);border-radius:12px;padding:12px 14px;font:inherit}   /* fields read as filled shapes with a soft hairline — the focus ring supplies the contrast */
   input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
   .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
   .grid2 > div{display:flex;flex-direction:column}          /* cells stretch to row height; push control to bottom so inputs align despite 1- vs 2-line labels */
@@ -333,15 +333,16 @@
   dialog.sheet[open]{animation:sheetUp .5s cubic-bezier(.16,1,.3,1)}
   dialog.sheet[open]::backdrop{animation:sheetFade .45s ease}
   dialog.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
-  /* sheet elements get the same raised-surface depth as the page sections — one card per group, every tab */
+  /* grouped-inset style — the sheet is already a raised surface, so groups sit as quiet fills with a
+     hairline, no drop shadows: boxes inside boxes read as chrome, not content */
   .sheet .rangepick,.sheet .grid2,.sheet .embox,.sheet .pdlist,.sheet .pdgroup,.sheet .bkgroup{
-    background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 55%,transparent);
-    border-radius:16px;box-shadow:var(--shadow);padding:16px;margin:10px 0 6px}
+    background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 45%,transparent);
+    border-radius:14px;padding:16px;margin:10px 0 6px}
   .sheet .embox{width:auto}
   dialog.sheet h2{margin-top:0}
-  .sheet-x{display:flex;justify-content:flex-end;margin:0}
-  .sheet-x .xbtn{background:none;border:0;color:var(--dim);font-size:17px;cursor:pointer;padding:4px 2px;line-height:1}
-  .sheet-x .xbtn:hover{color:var(--accent)}
+  .sheet-x{position:absolute;top:12px;right:16px;z-index:3;margin:0}   /* tucked — the grab handle leads the sheet, the ✕ stays reachable without owning a row */
+  .sheet-x .xbtn{background:none;border:0;color:var(--dim);font-size:15px;cursor:pointer;padding:6px;line-height:1;opacity:.7}
+  .sheet-x .xbtn:hover{color:var(--accent);opacity:1}
   .gear{position:fixed;top:calc(14px + env(safe-area-inset-top));right:16px;z-index:48;color:var(--dim);
     font-size:20px;line-height:1;cursor:pointer;padding:8px;border-radius:50%;transition:color .15s,transform .2s;
     background:var(--glass-bg);border:1px solid var(--glass-brd);backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);
@@ -352,7 +353,7 @@
   .tabs{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;bottom:0;z-index:2;
     margin:18px -22px 0;padding:12px 20px calc(12px + env(safe-area-inset-bottom));min-height:50px;
     background:var(--glass-bg);backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4);
-    border-top:1px solid var(--glass-brd);box-shadow:inset 0 1px 0 var(--glass-hi),0 -10px 22px -12px rgba(0,0,0,.4)}
+    border-top:1px solid var(--glass-brd);box-shadow:inset 0 1px 0 var(--glass-hi),0 -8px 18px -14px rgba(0,0,0,.35)}
   .tabtitle{color:var(--accent);font:500 12px/1 'Inter',sans-serif;letter-spacing:.16em;text-transform:uppercase}
   /* DESKTOP nav: prev/next arrows (click). MOBILE nav: pager dots + swipe. Each shows only on its breakpoint. */
   .tabnav{background:none;border:0;color:var(--dim);font-size:21px;line-height:1;cursor:pointer;padding:5px 13px;border-radius:8px;transition:color .15s}
@@ -1514,8 +1515,8 @@ function renderRest(){
   const sig=[started,total,state.restDays.join(),dayKey(new Date())].join("|");   // rest days change on explicit action (or midnight locks one) — not every second
   if(sig===_restSig) return; _restSig=sig;
   const left=Math.max(0,total-used);
-  let toks="";                                                     // remaining = sealed ◆, used = broken ◇
-  for(let i=0;i<total;i++) toks+=`<span class="tok${i<left?"":" spent"}">${i<left?"":"✕"}</span>`;
+  let toks="";                                                     // remaining = hollow outline, used = dim fill — states speak without glyphs
+  for(let i=0;i<total;i++) toks+=`<span class="tok${i<left?"":" spent"}"></span>`;
   if(!total) toks='<span class="tok none">none configured — set a budget in Plan</span>';
   $("restCount").innerHTML=toks+(total?`<span class="tokn">${left} of ${total} left</span>`:"");
   $("planRest").disabled=!started||left<=0;
@@ -1526,7 +1527,7 @@ function renderRest(){
     const day=parseDayKey(k);
     const locked=day.getTime()<=todayStart.getTime();
     const lab=WD_FMT.format(day);
-    return locked ? `<span class="restpill locked" title="locked in">${lab} 🔒</span>`
+    return locked ? `<span class="restpill locked" title="locked in">${lab}</span>`
                   : `<span class="restpill" data-k="${escapeHtml(k)}" title="click to release">${lab} ✕</span>`;
   }).join(" ");
 }
