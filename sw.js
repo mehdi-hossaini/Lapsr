@@ -1,6 +1,6 @@
 // Lapsr service worker — app-shell cache for offline + installable PWA.
 // ponytail: bump CACHE on any shell change; cache-first for shell.
-const CACHE = "lapsr-v57";
+const CACHE = "lapsr-v59";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icon.svg",
   "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
@@ -14,6 +14,19 @@ self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
+  );
+});
+self.addEventListener("notificationclick", (e) => {
+  // "Start next" action on the session-done / break-over notification — focus the app
+  // and let the page start the session (it owns the timer state), or cold-start via URL.
+  e.notification.close();
+  const wantStart = e.action === "start";
+  e.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((cs) => {
+      const c = cs[0];
+      if (c) { c.focus(); if (wantStart) c.postMessage({ cmd: "startNext" }); }
+      else return clients.openWindow(wantStart ? "./index.html?start=next" : "./");
+    })
   );
 });
 self.addEventListener("fetch", (e) => {
