@@ -133,7 +133,7 @@
   }
   h2{font-size:11px;text-transform:uppercase;letter-spacing:.25em;color:var(--dim);font-weight:500;margin:0 0 28px}
   .countdown{font:500 clamp(32px,9vw,46px)/1 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;letter-spacing:0;white-space:nowrap}
-  .countdown.urgent{color:var(--accent)} .countdown.critical{color:var(--accent)}
+  .countdown.urgent,.countdown.critical{color:var(--accent)}
   .sub2{color:var(--dim);font-size:12px;margin-top:14px;letter-spacing:.04em}
   .divider{height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);margin:40px auto;width:72px}
   .panel.first .row,.panel.first .credits,.panel.first .risk{justify-content:center}
@@ -315,7 +315,7 @@
     border-top:1px solid var(--glass-brd);box-shadow:inset 0 1px 0 var(--glass-hi),0 -10px 22px -12px rgba(0,0,0,.4)}
   .tabtitle{color:var(--accent);font:500 12px/1 'Inter',sans-serif;letter-spacing:.16em;text-transform:uppercase}
   /* DESKTOP nav: prev/next arrows (click). MOBILE nav: pager dots + swipe. Each shows only on its breakpoint. */
-  .tabnav{background:none;border:0;color:var(--dim);font-size:19px;line-height:1;cursor:pointer;padding:6px 12px;border-radius:8px;transition:color .15s}
+  .tabnav{background:none;border:0;color:var(--dim);font-size:21px;line-height:1;cursor:pointer;padding:5px 13px;border-radius:8px;transition:color .15s}
   .tabnav:hover{color:var(--accent)}
   .tabdots{display:none;gap:8px;align-items:center}   /* dots are mobile-only (shown in the max-859 block) */
   .tabdot{width:7px;height:7px;border-radius:50%;border:0;padding:0;cursor:pointer;
@@ -323,7 +323,6 @@
   .tabdot:hover{background:var(--dim)}
   .tabdot.on{background:var(--accent);transform:scale(1.3)}
   @media(max-width:859px){ .tabdots{display:flex} }   /* mobile keeps arrows too, plus dots + swipe */
-  .tabnav{font-size:21px;padding:5px 13px}
   .pane{display:none}
   .pane.active{display:block;animation:paneIn .28s cubic-bezier(.16,1,.3,1)}
   @keyframes paneIn{from{opacity:.3;transform:translateX(var(--slide,0))}to{opacity:1;transform:none}}
@@ -380,14 +379,13 @@
   .inst-ring{width:100%;height:100%}
   .inst-ring .ring-bg{fill:none;stroke:color-mix(in srgb,var(--line) 70%,transparent);stroke-width:5}
   .inst-ring .ring-fg{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;
-    stroke-dasharray:339.292;stroke-dashoffset:339.292;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .3s linear}
+    transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .3s linear}  /* dasharray/offset set from JS (RING_C) — one source of truth for the circumference */
   .inst-ringmid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
   .inst-time{font:500 42px/1 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
   .inst-runtask{font-size:12px;color:var(--dim);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .inst-barwrap{display:none}
   /* while a metered session runs, lock the instant launcher (one session at a time) */
   body.session-live:not(.free-live) .inst-idle{opacity:.4;pointer-events:none;filter:saturate(.4)}
-  .fab{display:none}   /* replaced by the peek-and-pop drawer below */
   @media(max-width:859px){
     .hero-col{padding-bottom:120px}   /* clear the peeking drawer at the bottom */
     body:not(.session-live) .g-focus .blocktimer{display:none}   /* no dead --:-- while idle; the status track already reads Ready */
@@ -547,7 +545,6 @@
   <span class="sub">spend the interval — or lose it</span>
 </header>
 <button id="settingsBtn" class="gear" type="button" aria-label="Settings — plan, emergency days, backup">⚙</button>
-<button id="fab" class="fab" type="button" aria-label="Start a focus session"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
 <div class="hero-col">
   <noscript><p style="text-align:center">Lapsr needs JavaScript — it's a local-only focus timer; nothing runs on a server.</p></noscript>
 
@@ -558,7 +555,7 @@
       <input id="instTask" placeholder="what are you focusing on? (optional)" aria-label="Instant focus task" />
       <div class="inst-tiles" id="instTiles" role="group" aria-label="Pick a length to start focusing">
         <button class="inst-tile" type="button" data-min="25"><span class="m">25</span><span class="u">min</span><span class="k">quick</span></button>
-        <button class="inst-tile" type="button" data-min="50"><span class="m">50</span><span class="u">min</span><span class="k">deep work</span></button>
+        <button class="inst-tile" type="button" data-min="50" data-default><span class="m">50</span><span class="u">min</span><span class="k">deep work</span></button>
         <button class="inst-tile" type="button" data-min="90"><span class="m">90</span><span class="u">min</span><span class="k">flow</span></button>
       </div>
       <div class="inst-hint">One tap — no plan, no credits, just focus. It logs when you finish.</div>
@@ -764,7 +761,6 @@
 // The period clock + forfeiture run on their own — no reset button, no pausing.
 const KEY="focuscredits.v2";
 const DEFAULTS={ periodMs:7*86400000, budget:20, block:50, brk:10, breakOn:false, stake:200, windowStart:540, windowH:5, restBudget:2 }; // periodMs = recurring period length, set via the Period start/end pickers; windowStart = minutes from midnight (09:00); windowH = daily claim-window length in hours; restBudget = pre-committed days off per period
-const WINDOW_H=5; // fallback daily-window length (hours) when cfg.windowH is absent — see DEFAULTS.windowH
 
 // ---- pure helpers (unit-tested via ?test=1) ----
 // The clock is anchored to when the user saved their plan (`anchor` = startedAt, ms) and rolls forward in
@@ -776,8 +772,13 @@ function fmtDuration(ms){                                       // friendly noun
 }
 function periodBounds(cfg, now, anchor){
   const a=anchor||0, t=Math.max(+now, a), dur=Math.max(3600000, cfg.periodMs||DEFAULTS.periodMs);   // clamp to the anchor — a future-dated plan's "current period" is just its first, not a bucket rolled backward before it starts
-  const start=a + Math.floor((t-a)/dur)*dur;
-  return { start:new Date(start), end:new Date(start+dur), key:"P"+new Date(start).toISOString(), label:"This "+fmtDuration(dur) };
+  const days=Math.round(dur/86400000);
+  let start=new Date(a), end;
+  if(days>=1 && dur===days*86400000){                             // whole-day period: roll on the calendar so a DST shift can't drift the boundary an hour off
+    end=new Date(start); end.setDate(end.getDate()+days);
+    while(end.getTime()<=t){ start=end; end=new Date(start); end.setDate(end.getDate()+days); }
+  } else { const s=a + Math.floor((t-a)/dur)*dur; start=new Date(s); end=new Date(s+dur); }
+  return { start, end, key:"P"+start.toISOString(), label:"This "+fmtDuration(dur) };
 }
 function periodDays(cfg, now, anchor){ const {start,end}=periodBounds(cfg,now,anchor); return Math.round((end-start)/86400000); }
 function creditsRemaining(s){ return Math.max(0, s.cfg.budget - s.spent - (s.forfeitedCredits||0) - (s.restedCredits||0)); }
@@ -796,52 +797,69 @@ function pdOrder(list, todayKey){ return (list||[]).filter(it=>it.lastFired!==to
 
 // ---- daily 5-hour window: claim inside it or that day's share is forfeited for good ----
 function minToHHMM(min){ const h=Math.floor((min%1440)/60), m=Math.round(min%60); return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
-function fmtClock(d){ return d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}); }
+function parseHHMM(v){ const m=/^(\d{1,2}):(\d{2})$/.exec(v); return m? Math.min(1439,Math.max(0,+m[1]*60+ +m[2])) : null; }   // inverse of minToHHMM — the one parser for <input type=time> values
+function parseDayKey(k){ const [y,m,d]=String(k).split("-").map(Number); return new Date(y,m-1,d); }   // inverse of dayKey
+function fmtMMSS(ms){ const t=Math.max(0,Math.floor(ms/1000)); return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`; }
+const TIME_FMT=new Intl.DateTimeFormat([], {hour:"2-digit",minute:"2-digit"});          // hoisted — Intl construction is the priciest thing in the 1 Hz render loop
+const DAY_FMT=new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric"});
+const WD_FMT=new Intl.DateTimeFormat(undefined,{weekday:"short",month:"short",day:"numeric"});
+function fmtClock(d){ return TIME_FMT.format(d); }
+function fmtDay(d){ return DAY_FMT.format(d); }
 function dayWindow(cfg, date){                                   // the window covering `date`'s local day
   const d=new Date(date); const open=new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,0,0,0);
-  open.setMinutes(cfg.windowStart); const close=new Date(open.getTime()+(cfg.windowH||WINDOW_H)*3600000);
+  open.setMinutes(cfg.windowStart); const close=new Date(open.getTime()+(cfg.windowH||DEFAULTS.windowH)*3600000);
   return {open, close};
 }
 function windowState(cfg, now){
   const {open,close}=dayWindow(cfg, now);
   if(now<open)  return {phase:"before", open, close, next:open};
   if(now<close) return {phase:"open",   open, close, next:close};
-  const t=86400000;                                             // closed for today → next is tomorrow's open
-  return {phase:"after", open:new Date(open.getTime()+t), close:new Date(close.getTime()+t), next:new Date(open.getTime()+t)};
+  const tm=new Date(now); tm.setDate(tm.getDate()+1);           // closed for today → next is tomorrow's window, calendar-derived so DST can't skew the reopen time
+  const w2=dayWindow(cfg, tm);
+  return {phase:"after", open:w2.open, close:w2.close, next:w2.open};
 }
 function dailyAllot(s){ const days=periodDays(s.cfg,new Date(),s.startedAt); return days? s.cfg.budget/days : 0; }
 function claimedInWindow(s, open, close){ const a=open.getTime(), b=close.getTime();
   return (s.marks||[]).filter(m=>{ const t=m.t0??m.t; return t>=a&&t<b; }).length; }  // attribute by session START — a session straddling window-close still counts for its day
 function canStart(s, now){
   if(!s.startedAt) return {ok:false, msg:"Save your plan first to start the clock."};
-  if(s.startedAt>(+now)) return {ok:false, msg:"Plan starts "+new Date(s.startedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})+"."};
-  if(creditsRemaining(s)<=0) return {ok:false, msg:"No credits left this period. Wait for the reset."};
+  if(s.startedAt>(+now)) return {ok:false, msg:"Plan starts "+fmtDay(new Date(s.startedAt))+"."};
+  if(Math.round(creditsRemaining(s))<=0) return {ok:false, msg:"No credits left this period. Wait for the reset."};   // rounded — the same figure the header shows, so display and gating always agree despite float allotments
   if(isRestDay(s, now)) return {ok:false, msg:"Emergency day — window resumes tomorrow."};
   const ws=windowState(s.cfg, now);
-  if(ws.phase!=="open") return {ok:false, msg:"Outside today's "+(s.cfg.windowH||WINDOW_H)+"-hour window — opens "+fmtClock(ws.next)+"."};
+  if(ws.phase!=="open") return {ok:false, msg:"Outside today's "+(s.cfg.windowH||DEFAULTS.windowH)+"-hour window — opens "+fmtClock(ws.next)+"."};
   if(claimedInWindow(s, ws.open, ws.close) >= dailyAllot(s)) return {ok:false, msg:"Today's window quota is spent. Come back when it reopens."};
   return {ok:true, msg:""};
+}
+// The one per-window forfeit rule — settlement (billing), the chart's lost ticks and the log's day
+// tallies all read THIS, so display can never disagree with what actually gets billed.
+function windowForfeitCredits(s, open, close, now){
+  if(close.getTime()>(+now)) return 0;                          // window still open or in the future
+  const live=(s.session&&s.session.phase==="work")? (s.session.t0||0) : 0;  // a session in progress hasn't pushed its mark yet
+  if(live>=open.getTime() && live<close.getTime()) return 0;    // started inside this window, still running — defer until it completes and claims
+  if(isRestDay(s, open)) return 0;                              // pre-committed day off: never forfeits
+  return Math.max(0, dailyAllot(s) - claimedInWindow(s, open, close));
 }
 // Forfeit every daily window that has fully closed since the last settlement — permanent, no catch-up, billed at period end.
 function settleWindows(s, now){
   const perKr=s.cfg.budget? s.cfg.stake/s.cfg.budget : 0, allot=dailyAllot(s);
   const start=periodBounds(s.cfg, now, s.startedAt).start.getTime();
-  const live=(s.session&&s.session.phase==="work")? (s.session.t0||0) : 0;  // a session in progress hasn't pushed its mark yet
+  const live=(s.session&&s.session.phase==="work")? (s.session.t0||0) : 0;
   let probe=new Date(Math.max(s.settledThrough||0, start)), changed=false;
   for(let i=0;i<400;i++){                                        // ponytail: linear day scan, period ≤ 31 days
     const {open,close}=dayWindow(s.cfg, probe);
     if(close.getTime()>now.getTime()) break;                    // window still open or in the future
-    if(live>=open.getTime() && live<close.getTime()) break;     // a session started in this window is still running — defer forfeit until it completes and claims
+    if(live>=open.getTime() && live<close.getTime()) break;     // defer — stop scanning until the straddling session resolves
     if(close.getTime()>(s.settledThrough||0) && open.getTime()>=start){
       if(isRestDay(s, open)){                                    // pre-committed day off: set the allotment aside, never forfeit
         s.restedCredits=(s.restedCredits||0)+allot;
       } else {
-        const forfeit=Math.max(0, allot - claimedInWindow(s, open, close));
+        const forfeit=windowForfeitCredits(s, open, close, now);
         if(forfeit>0){ s.wasted += forfeit*perKr; s.forfeitedCredits=(s.forfeitedCredits||0)+forfeit; }
       }
       s.settledThrough=close.getTime(); changed=true;
     }
-    probe=new Date(open.getTime()+86400000);
+    probe=new Date(open); probe.setDate(probe.getDate()+1);      // calendar step, not +24h — DST-safe
   }
   return changed;
 }
@@ -851,29 +869,49 @@ function fmtLeft(ms){ if(ms<0)ms=0; const t=Math.floor(ms/1000); const d=Math.fl
 
 // ---- state ----
 function normalize(s){
-  if(!s) s={};
-  if(!s.cfg) s.cfg={...DEFAULTS};
-  for(const k in DEFAULTS) if(s.cfg[k]==null) s.cfg[k]=DEFAULTS[k];
-  if(typeof s.spent!=="number") s.spent=0;
+  if(!s || typeof s!=="object" || Array.isArray(s)) s={};         // a primitive/array in storage must reset, not TypeError the whole module at boot
+  if(!s.cfg || typeof s.cfg!=="object") s.cfg={...DEFAULTS};
+  for(const k in DEFAULTS){                                       // coerce + validate every cfg field — an imported "budget":"abc" must not NaN-poison the ledger
+    if(k==="breakOn"){ s.cfg.breakOn=!!s.cfg.breakOn; continue; }
+    s.cfg[k]=+s.cfg[k];
+    if(!Number.isFinite(s.cfg[k])) s.cfg[k]=DEFAULTS[k];
+  }
+  s.cfg.windowStart=Math.max(0,Math.min(1439,s.cfg.windowStart));
+  s.cfg.windowH=Math.max(1,Math.min(24,s.cfg.windowH));
+  s.cfg.windowStart=Math.min(s.cfg.windowStart,1440-s.cfg.windowH*60);  // window must fit inside the calendar day — dayWindow can't represent one crossing midnight
+  const num=(v,d)=>Number.isFinite(+v)? +v : d;                   // Number.isFinite — unlike typeof, this also repairs a persisted NaN
+  s.spent=num(s.spent,0);
   if(!Array.isArray(s.marks)) s.marks=[];
-  if(typeof s.wasted!=="number") s.wasted=0;          // permanent forfeiture ledger
-  if(typeof s.forfeitedCredits!=="number") s.forfeitedCredits=0; // credits already forfeited this period via daily windows
-  if(!Array.isArray(s.restDays)) s.restDays=[];                  // pre-committed days off this period (local "YYYY-MM-DD" keys)
-  if(typeof s.restedCredits!=="number") s.restedCredits=0;       // allotment set aside by rest days — not forfeited, not billed
-  if(typeof s.settledThrough!=="number") s.settledThrough=0;     // ms: last window-close we've settled forfeiture up to
+  s.marks=s.marks.filter(m=>m && Number.isFinite(m.t0??m.t));     // shapeless marks silently break claimedInWindow → wrong forfeits
+  s.wasted=num(s.wasted,0);                                       // permanent forfeiture ledger
+  s.forfeitedCredits=num(s.forfeitedCredits,0);                   // credits already forfeited this period via daily windows
+  if(!Array.isArray(s.restDays)) s.restDays=[];                   // pre-committed days off this period (local "YYYY-MM-DD" keys)
+  s.restDays=s.restDays.filter(k=>typeof k==="string" && /^\d{4}-\d{2}-\d{2}$/.test(k));
+  s.restedCredits=num(s.restedCredits,0);                         // allotment set aside by rest days — not forfeited, not billed
+  s.settledThrough=num(s.settledThrough,0);                       // ms: last window-close we've settled forfeiture up to
   if(!Array.isArray(s.log)) s.log=[];                 // completed-session history (survives period reset)
+  s.log=s.log.filter(e=>e && Number.isFinite(e.t));
   if(!Array.isArray(s.predet)) s.predet=[];            // queued sessions: {id,time(min-of-day),intent,reusable,lastFired(dayKey|null)} — auto-start once due
+  s.predet=s.predet.filter(it=>it && Number.isFinite(it.time));
   if(typeof s.periodKey!=="string") s.periodKey="";
-  if(typeof s.startedAt!=="number") s.startedAt=0;    // 0 = plan not saved yet → clock idle, nothing counts down
+  s.startedAt=num(s.startedAt,0);                     // 0 = plan not saved yet → clock idle, nothing counts down
   if(typeof s.goal!=="string") s.goal="";             // period goal; completed sessions are steps toward it. ponytail: persists across resets, user re-edits
   if(!s.updated_at) s.updated_at=0;
   if(!s.startedAt && s.periodKey){                    // migrate legacy calendar-anchored data: start the clock now, keep progress
     s.startedAt=Date.now(); s.periodKey=periodBounds(s.cfg,new Date(),s.startedAt).key; s.settledThrough=s.startedAt;
   }
   if(s.startedAt){                                     // only roll periods / forfeit once the clock has started
-    const key=periodBounds(s.cfg, new Date(), s.startedAt).key;
+    const {key,start}=periodBounds(s.cfg, new Date(), s.startedAt);
     if(s.periodKey!==key){
-      if(s.periodKey) s.wasted += atRiskKr(s);         // forfeit the closed period's still-unclaimed remainder
+      if(s.periodKey){
+        s.wasted += atRiskKr(s);                       // forfeit the closed period's still-unclaimed remainder
+        const dur=Math.max(3600000, s.cfg.periodMs||DEFAULTS.periodMs);
+        const prevStart=Date.parse(s.periodKey.slice(1));   // periodKey = "P"+ISO of the period's start
+        if(Number.isFinite(prevStart)){                // fully-skipped periods in between forfeit their whole stake — use it or lose it holds across absences
+          const skipped=Math.max(0, Math.round((start.getTime()-prevStart)/dur)-1);
+          if(skipped>0) s.wasted += skipped*(s.cfg.stake||0);
+        }
+      }
       s.periodKey=key; s.spent=0; s.marks=[]; s.forfeitedCredits=0; s.restDays=[]; s.restedCredits=0; s.settledThrough=0;
     }
   }
@@ -881,7 +919,11 @@ function normalize(s){
 }
 function loadLocal(){ let s; try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){s=null} return normalize(s); }
 const DEMO=new URLSearchParams(location.search).get("demo")==="1";
-function saveLocal(s){ if(DEMO) return; localStorage.setItem(KEY, JSON.stringify(s)); }  // demo never touches real data
+let TESTMODE=false;                                    // ?test=1 sims must never write the real key — a mid-soak crash would strand synthetic state
+let saveWarned=false;
+function saveLocal(s){ if(DEMO||TESTMODE) return;      // demo/test never touch real data
+  try{ localStorage.setItem(KEY, JSON.stringify(s)); }
+  catch(e){ if(!saveWarned){ saveWarned=true; alert("Couldn't save — storage is full or blocked. Your progress may not persist."); } } }  // a setItem throw mid-completeWork must not abort the phase transition
 // ?demo=1 — seeded mid-week state for screenshots/demos; in-memory only
 function demoState(){
   const now=Date.now(), day=86400000, d=new Date();
@@ -910,11 +952,12 @@ function exportData(){
   a.click(); URL.revokeObjectURL(a.href);
 }
 function importData(file){
+  if(phase!==null){ alert("Finish or cancel the running session first — importing replaces this device's data."); return; }  // else the live ticker completes into the imported ledger
   const r=new FileReader();
   r.onload=()=>{ try{
       const incoming=normalize(JSON.parse(r.result));
       if(!confirm("Replace this device's data with the imported file?")) return;
-      state=incoming; commit(); fillSettings(); refreshChart(); render();
+      state=incoming; commit(); fillSettings(); refreshChart(); resumeSession(); render();
       alert("Imported.");
     }catch(e){ alert("Couldn't read that file — not a valid Lapsr backup."); } };
   r.readAsText(file);
@@ -922,9 +965,12 @@ function importData(file){
 
 // ===== focus session — two-phase work→break, drift-free =====
 let phase=null, phaseEndTs=null, ticker=null, curIntent="", curT0=0;
-let freeDur=50, curFree=false;   // execution-first: with no plan, start a free session of freeDur minutes — logged, but no credit/window/stake
+let curFree=false;               // the running session is a free/instant one — logged, but no credit/window/stake
+let _lastTitle="", _lastInstMM="";   // last-written countdown strings — the 250ms tick skips same-value DOM/title writes
 const $=id=>document.getElementById(id);
 const BASE_TITLE=document.title;
+const RING_C=(()=>{ const fg=$("instRingFg"); const c=fg? 2*Math.PI*fg.r.baseVal.value : 339.292;   // circumference derives from the SVG's own r — resize the ring in one place
+  if(fg){ fg.style.strokeDasharray=c; fg.style.strokeDashoffset=c; } return c; })();
 
 // ---- phase-end signals: a focus timer that ends silently in another tab is broken ----
 let audioCtx=null;
@@ -936,14 +982,19 @@ function beep(n){ try{ audioCtx=audioCtx||new (window.AudioContext||window.webki
     g.gain.setValueAtTime(.12,t+i*.28); g.gain.exponentialRampToValueAtTime(.001,t+i*.28+.22);
     o.start(t+i*.28); o.stop(t+i*.28+.24); }
 }catch(e){} }
-function notify(body){ if(window.Notification && Notification.permission==="granted")
-  try{ new Notification("Lapsr",{body,icon:"./icon.svg",tag:"lapsr-phase"}); }catch(e){} }
+function notify(body){ if(!window.Notification || Notification.permission!=="granted") return;
+  const opts={body,icon:"./icon.svg",tag:"lapsr-phase"};
+  const reg=navigator.serviceWorker && navigator.serviceWorker.getRegistration();  // Android Chrome: page-context `new Notification` throws Illegal constructor — must go through the SW registration
+  if(reg) reg.then(r=>{ if(r && r.showNotification) r.showNotification("Lapsr",opts); else new Notification("Lapsr",opts); }).catch(()=>{ try{ new Notification("Lapsr",opts); }catch(e){} });
+  else try{ new Notification("Lapsr",opts); }catch(e){} }
 // keep the screen awake while a session or break is ticking (auto-released when the tab hides)
-let wakeLock=null;
-async function lockScreen(){ unlockScreen(); try{ wakeLock=await navigator.wakeLock?.request("screen"); }catch(e){} }
-function unlockScreen(){ try{ wakeLock?.release(); }catch(e){} wakeLock=null; }
+let wakeLock=null, wlGen=0;                              // generation token: an unlock during the async request must win, or a cancelled session leaves the screen held awake
+async function lockScreen(){ unlockScreen(); const g=++wlGen;
+  try{ const wl=await navigator.wakeLock?.request("screen");
+    if(g===wlGen) wakeLock=wl; else wl?.release(); }catch(e){} }
+function unlockScreen(){ wlGen++; try{ wakeLock?.release(); }catch(e){} wakeLock=null; }
 function setBtns(){ const cs=canStart(state,new Date());
-  document.body.classList.toggle("session-live", phase!==null);        // hide the FAB while a session runs
+  document.body.classList.toggle("session-live", phase!==null);        // lock the instant launcher while a session runs
   document.body.classList.toggle("free-live", phase!==null && curFree); // an instant/free session is the one running
   if(phase!==null) document.body.classList.remove("compose-open");
   $("cancelBlock").disabled = phase===null;
@@ -952,50 +1003,51 @@ function setBtns(){ const cs=canStart(state,new Date());
   if(phase!==null){ bar.style.display="none"; }
   else if(!state.startedAt){ bar.style.display=""; intentEl.style.display="none"; cta.textContent="Set your plan"; cta.disabled=false; }
   else { bar.style.display=""; intentEl.style.display=""; cta.textContent="Start session"; cta.disabled=!cs.ok; } }
-function startBlock(auto){                                            // auto (string, optional): a predetermined session firing on its own, no click gesture
-  if(phase!==null) return;                                           // a session is already running — never overwrite it (guards reload races + double-taps)
-  const free = !state.startedAt;                                     // no plan saved → execution-first free session (never gated), no credit/window/stake
-  if(!free){ const cs=canStart(state, new Date()); if(!cs.ok){ if(auto==null) alert(cs.msg); return; } }
-  curFree=free;
-  curIntent = auto!=null ? auto : $("intent").value.trim();
-  if(auto==null && !curIntent && !confirm("Start without naming the task? Naming it boosts follow-through.")) return;
-  if(auto==null){                                                     // gesture-gated bits only apply to a real click
-    if(window.Notification && Notification.permission==="default") Notification.requestPermission();  // ask inside the click gesture
-    beep(0);                                                           // unlock AudioContext inside the gesture (autoplay policy)
-  }
-  const dur = free ? freeDur : state.cfg.block;                       // free sessions use the chip-picked length; metered sessions use the plan's
-  phase="work"; curT0=Date.now(); phaseEndTs=curT0+dur*60*1000;
+function beginSession(min, intent, free){                              // the ONE session-start path — both entry points persist the same shape
+  curFree=free; curIntent=intent;
+  phase="work"; curT0=Date.now(); phaseEndTs=curT0+min*60*1000;
   state.session={phase,endTs:phaseEndTs,intent:curIntent,t0:curT0,free}; commit();   // persist so screen-off/reload resumes
   lockScreen();
   $("intent").value=curIntent;
-  $("blockHint").textContent = auto!=null ? "Auto-started: "+curIntent : (curIntent ? "Now: "+curIntent : "Focused, single-task work.");
   setBtns(); tick(); ticker=setInterval(tick,250);
+}
+function unlockSignals(){                                              // gesture-gated: ask for notifications + unlock AudioContext (autoplay policy)
+  if(window.Notification && Notification.permission==="default") Notification.requestPermission();
+  beep(0);
+}
+function startBlock(auto){                                            // auto (string, optional): a predetermined session firing on its own, no click gesture. Returns true only if the session actually started.
+  if(phase!==null) return false;                                      // a session is already running — never overwrite it (guards reload races + double-taps)
+  const cs=canStart(state, new Date()); if(!cs.ok){ if(auto==null) alert(cs.msg); return false; }   // metered only — free sessions live in startInstant
+  const intent = auto!=null ? auto : $("intent").value.trim();
+  if(auto==null && !intent && !confirm("Start without naming the task? Naming it boosts follow-through.")) return false;
+  if(auto==null) unlockSignals();                                     // only a real click can carry the gesture
+  beginSession(state.cfg.block, intent, false);
+  $("blockHint").textContent = auto!=null ? "Auto-started: "+intent : (intent ? "Now: "+intent : "Focused, single-task work.");
+  return true;
 }
 function startInstant(min){                                            // instant panel: one-tap free session, ALWAYS free (even if a plan is active)
   if(phase!==null) return;                                            // one session at a time
-  curFree=true; curIntent=$("instTask").value.trim();
-  if(window.Notification && Notification.permission==="default") Notification.requestPermission();
-  beep(0);                                                            // unlock audio inside the tap gesture
-  phase="work"; curT0=Date.now(); phaseEndTs=curT0+min*60*1000;
-  state.session={phase,endTs:phaseEndTs,intent:curIntent,t0:curT0,free:true}; commit();
-  lockScreen();
-  $("instTask").value=""; $("intent").value=curIntent;
-  $("blockHint").textContent = curIntent?("Now: "+curIntent):"Focused, single-task work.";
-  setBtns(); tick(); ticker=setInterval(tick,250);
+  unlockSignals();
+  const intent=$("instTask").value.trim();
+  beginSession(min, intent, true);
+  $("instTask").value="";
+  $("blockHint").textContent = intent?("Now: "+intent):"Focused, single-task work.";
 }
 function updInstant(){                                                 // drive the instant panel's ring (mobile) + bar (desktop) while a free session runs
   if(phase===null || !curFree) return;
   const total=Math.max(1,phaseEndTs-curT0), left=Math.max(0,phaseEndTs-Date.now()), el=1-left/total;
-  const fg=$("instRingFg"); if(fg) fg.style.strokeDashoffset=(339.292*(1-el)).toFixed(1);   // ring fills as time elapses
+  const fg=$("instRingFg"); if(fg) fg.style.strokeDashoffset=(RING_C*(1-el)).toFixed(1);   // ring fills as time elapses
   const bar=$("instBarFill"); if(bar) bar.style.width=(el*100).toFixed(1)+"%";
-  const t=Math.floor(left/1000), mm=`${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`;
-  for(const id of ["instTime","instTime2"]){ const e=$(id); if(e) e.textContent=mm; }
-  for(const id of ["instRunTask","instRunTask2"]){ const e=$(id); if(e) e.textContent=curIntent||"focus"; }
+  const mm=fmtMMSS(left);
+  if(mm!==_lastInstMM){ _lastInstMM=mm;                          // text changes once a second — skip the other 3 same-value writes per second
+    for(const id of ["instTime","instTime2"]){ const e=$(id); if(e) e.textContent=mm; }
+    for(const id of ["instRunTask","instRunTask2"]){ const e=$(id); if(e) e.textContent=curIntent||"focus"; }
+  }
 }
 function startBreak(anchor){ phase="break"; phaseEndTs=(anchor||Date.now())+state.cfg.brk*60*1000;  // anchor = true work-end ts when resuming, else now
   state.session={phase,endTs:phaseEndTs,intent:""}; commit(); lockScreen();
   $("blockHint").textContent="Recover — walk, stretch, look away. Screens don't restore attention."; setBtns(); tick(); if(!ticker) ticker=setInterval(tick,250); }
-function endTimer(){ clearInterval(ticker); ticker=null; phase=null; phaseEndTs=null; curT0=0; state.session=null; saveLocal(state); $("blockTimer").textContent="--:--"; document.title=BASE_TITLE; unlockScreen(); setBtns(); }
+function endTimer(){ clearInterval(ticker); ticker=null; phase=null; phaseEndTs=null; curT0=0; state.session=null; saveLocal(state); _lastTitle=""; _lastInstMM=""; $("blockTimer").textContent="--:--"; document.title=BASE_TITLE; unlockScreen(); setBtns(); }
 function resumeSession(){   // restore an in-progress session after reload/sleep using its absolute end-timestamp
   const s=state.session; if(!s) return;
   curIntent=s.intent||""; curT0=s.t0||0; curFree=!!s.free;
@@ -1007,20 +1059,28 @@ function resumeSession(){   // restore an in-progress session after reload/sleep
 }
 function cancelBlock(){ const b=phase==="break"; endTimer(); $("blockHint").textContent = b?"Break skipped.":"Cancelled — no credit claimed."; }
 function completeWork(anchor){ const now=Date.now();
-  state.log.push({t:now,intent:curIntent,...(curFree?{free:true}:{})}); if(state.log.length>200) state.log=state.log.slice(-200);  // history always logs (free or metered)
-  if(!curFree){ state.spent+=1; state.marks.push({t:now,t0:curT0||now,spent:state.spent,intent:curIntent}); }   // only metered sessions consume a credit + hit the chart
+  clearInterval(ticker); ticker=null;                                // stop the tick FIRST — if anything below throws, the 250ms loop must not re-enter and double-claim
+  const wasFree=curFree;
+  state.log.push({t:now,intent:curIntent,...(wasFree?{free:true}:{})}); if(state.log.length>200) state.log=state.log.slice(-200);  // history always logs (free or metered)
+  if(!wasFree){ state.spent+=1; state.marks.push({t:now,t0:curT0||now,spent:state.spent,intent:curIntent}); }   // only metered sessions consume a credit + hit the chart
+  const allClaimed=!wasFree && Math.round(creditsRemaining(state))<=0;   // rounded — same figure the header shows
+  state.session=null;                                                // credit + session-clear persist in ONE commit — a crash between them could otherwise re-claim on resume
   commit(); render(); refreshChart();
   $("intent").value=""; curIntent="";
-  beep(2); notify(curFree? "Session done — logged." : (state.cfg.breakOn? "Session done — credit claimed. Take the break." : "Session done — credit claimed."));
-  if(curFree){ endTimer(); $("blockHint").textContent="Session logged. Start another when you're ready."; return; }   // free path: no credit, no break math
-  if(creditsRemaining(state)===0){ endTimer(); $("blockHint").textContent="All credits claimed. Rest until the period resets."; return; }
+  beep(2); notify(wasFree? "Session done — logged."
+    : allClaimed? "Session done — credit claimed. All credits claimed this period."   // don't promise a break the ===0 branch never starts
+    : (state.cfg.breakOn? "Session done — credit claimed. Take the break." : "Session done — credit claimed."));
+  if(wasFree){ endTimer(); $("blockHint").textContent="Session logged. Start another when you're ready."; return; }   // free path: no credit, no break math
+  if(allClaimed){ endTimer(); $("blockHint").textContent="All credits claimed. Rest until the period resets."; return; }
   if(state.cfg.breakOn){ startBreak(anchor); }                       // opt-in break; otherwise end and let the user start the next when ready
   else { endTimer(); $("blockHint").textContent="Credit claimed. Start the next session when you're ready."; } }
-function tick(){ const left=phaseEndTs-Date.now(), t=Math.max(0,Math.floor(left/1000));
-  const mmss=`${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`;
-  $("blockTimer").textContent=mmss;
+function tick(){ const left=phaseEndTs-Date.now();
+  const mmss=fmtMMSS(left), title=(phase==="break"?"break ":"")+mmss+" · Lapsr";
+  if(title!==_lastTitle){ _lastTitle=title;                          // the string changes once a second — the 250ms drift-check shouldn't rewrite title/DOM the other 3 times
+    $("blockTimer").textContent=mmss;
+    document.title=title;                                            // countdown visible from any tab
+  }
   updInstant();                                                      // mirror into the instant panel's ring/bar when it's a free session
-  document.title=(phase==="break"?"break ":"")+mmss+" · Lapsr";     // countdown visible from any tab
   if(left<=0){ if(phase==="work") completeWork(); else { endTimer(); beep(1); notify("Break over — back to it."); } } }
 
 // ===== chart: credits used vs steady pace — inline SVG, zen redesign =====
@@ -1037,19 +1097,18 @@ function refreshChart(){
   const you=d=>{ let y=0; for(const m of marks){ if(m.d<=d) y=m.spent; else break; } return y; };
   const pace=d=>budget*d/days;
 
-  // forfeited windows — reconstructed from marks/rest days, a quiet baseline tick where a window closed unclaimed
+  // forfeited windows — the same windowForfeitCredits rule the billing uses, so the chart can never show a forfeit the ledger doesn't apply
   let lost="";
   if(state.startedAt){
-    const allot=dailyAllot(state);
     let probe=new Date(t0);
     for(let i=0;i<32;i++){
       const {open,close}=dayWindow(state.cfg, probe);
       if(close.getTime()>Date.now()) break;
-      if(open.getTime()>=t0 && !isRestDay(state,open)){
-        const n=allot-claimedInWindow(state,open,close);
+      if(open.getTime()>=t0){
+        const n=windowForfeitCredits(state, open, close, Date.now());
         if(n>0.01) lost+=`<circle cx="${X((close.getTime()-t0)/DAY)}" cy="${Y(0)}" r="2.2" style="fill:none;stroke:var(--dim);stroke-width:1;opacity:.55"><title>${escapeHtml("window closed unclaimed — "+(n<1?n.toFixed(2):Math.round(n))+" credit share forfeited")}</title></circle>`;
       }
-      probe=new Date(open.getTime()+DAY);
+      probe=new Date(open); probe.setDate(probe.getDate()+1);
     }
   }
 
@@ -1097,22 +1156,19 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<
 // per-day forfeit (kr) for the calendar day `key` under the current cfg — 0 unless the window has closed unclaimed within this period
 function dayForfeitKr(key){
   if(!state.startedAt) return 0;
-  const [y,m,d]=key.split("-").map(Number), probe=new Date(y,m-1,d,12,0,0);
-  const {open,close}=dayWindow(state.cfg, probe);
-  if(close.getTime()>Date.now() || isRestDay(state, open)) return 0;
+  const {open,close}=dayWindow(state.cfg, parseDayKey(key));
   const {start,end}=periodBounds(state.cfg, new Date(), state.startedAt);
   if(open.getTime()<start.getTime() || open.getTime()>=end.getTime()) return 0;   // only the current period
   const perKr=state.cfg.budget? state.cfg.stake/state.cfg.budget : 0;
-  const n=dailyAllot(state)-claimedInWindow(state, open, close);
+  const n=windowForfeitCredits(state, open, close, Date.now());                   // shared rule — matches settlement exactly (incl. the live-session deferral)
   return n>0.01? n*perKr : 0;
 }
 function dayLabel(key){
   if(key===dayKey(Date.now())) return "Today";
   if(key===dayKey(Date.now()-86400000)) return "Yesterday";
-  const [y,m,d]=key.split("-").map(Number);
-  return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+  return WD_FMT.format(parseDayKey(key));
 }
-let _logSig="";
+let _logSig="", _dotSig="", _stMarkSig="", _restSig="", _pdSig="";   // per-section rebuild signatures — the 1 Hz render loop only rebuilds DOM whose state actually changed
 function renderLog(){
   const log=state.log||[];
   const sig=log.length+"|"+Math.round(state.wasted)+"|"+Math.floor(Date.now()/30000);   // rebuild on new session, forfeit change, or ~30s
@@ -1133,7 +1189,7 @@ function renderLog(){
     const items = rows.map(e=>{
       const title = e.intent ? escapeHtml(e.intent) : '<span class="unnamed">unnamed session</span>';
       const desc = e.desc ? `<span class="desc">${escapeHtml(e.desc)}</span>` : '';
-      return `<div class="commit" data-t="${e.t}" title="Click to add a note"><span class="node"></span><span class="msg">${title}${desc}</span><span class="meta">${fmtClock(new Date(e.t))}</span><span class="edit" aria-hidden="true">✎</span></div>`;
+      return `<div class="commit" data-t="${+e.t}" title="Click to add a note"><span class="node"></span><span class="msg">${title}${desc}</span><span class="meta">${fmtClock(new Date(e.t))}</span><span class="edit" aria-hidden="true">✎</span></div>`;
     }).join("");
     return `<div class="daygroup"><div class="dayhead"><span class="dh-date">${dayLabel(k)}</span><span class="dh-tally">${tally}</span></div>${items}</div>`;
   }).join("");
@@ -1160,23 +1216,24 @@ function render(){
   if(started){
     const left=end-now; cd.textContent=fmtLeft(left);
     cd.className="countdown"+(left<6*3600000?" critical":left<24*3600000?" urgent":"");
-    const opt={month:"short",day:"numeric"};
-    $("periodRange").textContent=`${start.toLocaleDateString(undefined,opt)} – ${new Date(end-1).toLocaleDateString(undefined,opt)} · resets automatically`;
+    $("periodRange").textContent=`${fmtDay(start)} – ${fmtDay(new Date(end-1))} · resets automatically`;
   } else if(pending){
     cd.textContent=fmtLeft(state.startedAt-now.getTime()); cd.className="countdown";
-    const opt={month:"short",day:"numeric"};
-    $("periodRange").textContent=`Starts ${new Date(state.startedAt).toLocaleDateString(undefined,opt)} – ${new Date(end-1).toLocaleDateString(undefined,opt)}`;
+    $("periodRange").textContent=`Starts ${fmtDay(new Date(state.startedAt))} – ${fmtDay(new Date(end-1))}`;
   } else {
     cd.textContent="—"; cd.className="countdown";
     $("periodRange").textContent="Save your plan below to start the clock.";
   }
   const rem=creditsRemaining(state);
   $("remaining").textContent=Math.round(rem); $("spent").textContent=state.spent; $("budget").textContent=state.cfg.budget;
-  const dots=$("creditDots"); dots.innerHTML="";
-  const cap=Math.min(state.cfg.budget,60);                  // don't render thousands of dots
-  for(let i=0;i<cap;i++){ const d=document.createElement("div"); d.className="credit";
-    if(i<state.spent){d.classList.add("spent");d.textContent="✓";} else {d.classList.add("atrisk");d.textContent="◷";} dots.appendChild(d); }
-  if(state.cfg.budget>cap){ const more=document.createElement("div"); more.className="credit"; more.textContent="+"+(state.cfg.budget-cap); dots.appendChild(more); }
+  const dotSig=state.spent+"|"+state.cfg.budget;            // the dots change a few times a day — don't rebuild 60 nodes every second
+  if(dotSig!==_dotSig){ _dotSig=dotSig;
+    const dots=$("creditDots"); dots.innerHTML="";
+    const cap=Math.min(state.cfg.budget,60);                // don't render thousands of dots
+    for(let i=0;i<cap;i++){ const d=document.createElement("div"); d.className="credit";
+      if(i<state.spent){d.classList.add("spent");d.textContent="✓";} else {d.classList.add("atrisk");d.textContent="◷";} dots.appendChild(d); }
+    if(state.cfg.budget>cap){ const more=document.createElement("div"); more.className="credit"; more.textContent="+"+(state.cfg.budget-cap); dots.appendChild(more); }
+  }
   $("atRisk").textContent=started? atRiskKr(state):0;
   $("wasted").textContent=Math.round(state.wasted);
   $("uPerLabel").textContent=label;
@@ -1194,13 +1251,13 @@ function render(){
     else { $("windowInfo").textContent=`Window closed · reopens ${fmtClock(ws.next)}`; }
   } else {
     setMeter("uPer", 0, "0% used", "—"); setMeter("uWin", 0, "0% used", "—");
-    $("windowInfo").textContent = pending ? `Sessions begin ${new Date(state.startedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})}.` : "Pick a length and start — no setup needed.";
+    $("windowInfo").textContent = pending ? `Sessions begin ${fmtDay(new Date(state.startedAt))}.` : "Pick a length and start — no setup needed.";
   }
   const g=$("goalLine");
   if(state.goal){ g.className="goal"; g.innerHTML='<span class="lab">Goal · '+label.toLowerCase()+'</span>'+escapeHtml(state.goal); }
   else { g.className="goal empty"; g.textContent="No goal set — add one in Plan. Each completed session is a step toward it."; }
   const perKr=state.cfg.budget? state.cfg.stake/state.cfg.budget : 0;   // money secured = credits already claimed × per-credit stake (can't be forfeited now)
-  if(!state.startedAt){ const t0=new Date().setHours(0,0,0,0), n=(state.log||[]).filter(e=>e.t>=t0).length; $("streak").textContent = n? n+(n===1?" session today":" sessions today") : ""; }
+  if(!state.startedAt){ const t0=dateOnly(new Date()).getTime(), n=(state.log||[]).filter(e=>e.t>=t0).length; $("streak").textContent = n? n+(n===1?" session today":" sessions today") : ""; }
   else $("streak").textContent = state.spent>0 ? Math.round(perKr*state.spent)+" kr secured" : "";
   renderLog();
   renderRest();
@@ -1218,8 +1275,8 @@ function renderStatus(){
     $("stOpen").textContent="--:--"; $("stClose").textContent="--:--";
     $("stFill").className="sfill"; $("stFill").style.width="0%";
     $("stRight").textContent="";
-    $("stMid").textContent = state.startedAt>Date.now() ? "starts "+new Date(state.startedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"}) : "save a plan first";
-    $("stTrack").querySelectorAll(".mark").forEach(m=>m.remove());
+    $("stMid").textContent = state.startedAt>Date.now() ? "starts "+fmtDay(new Date(state.startedAt)) : "save a plan first";
+    $("stTrack").querySelectorAll(".mark").forEach(m=>m.remove()); _stMarkSig="";
     $("stNow").className="snow"; $("stNow").style.left="0%";
     return;
   }
@@ -1234,19 +1291,24 @@ function renderStatus(){
   else { fill.className="sfill closed"; fill.style.width="100%";
     $("stRight").textContent="window closed"; $("stMid").textContent="reopens "+fmtClock(ws.next); }
 
-  const track=$("stTrack"), t0=new Date().setHours(0,0,0,0);
-  track.querySelectorAll(".mark").forEach(m=>m.remove());       // keep #stFill/#stNow, rebuild claimed-session ticks
-  for(const e of (state.log||[]).filter(e=>e.t>=t0)){
-    const m=document.createElement("div"); m.className="mark";
-    m.style.left=pct(e.t)+"%"; m.title=fmtClock(new Date(e.t))+(e.intent?" · "+e.intent:"");
-    track.appendChild(m);
-  }
-  const todayKey=dayKey(now);                                    // queued predetermined sessions still due today — hollow ticks ahead of the now-marker
-  for(const it of (state.predet||[]).filter(it=>it.lastFired!==todayKey)){
-    const t=t0+it.time*60000;
-    const m=document.createElement("div"); m.className="mark future";
-    m.style.left=pct(t)+"%"; m.title=minToHHMM(it.time)+" · "+it.intent+" (queued)";
-    track.appendChild(m);
+  const track=$("stTrack"), t0=dateOnly(new Date()).getTime(), todayKey=dayKey(now);
+  // claim ticks come from state.marks (credits actually claimed, positioned by session START) — free/instant
+  // sessions log but claim nothing, so they must not paint the window track as spent
+  const markSig=[todayKey, (state.marks||[]).filter(m=>(m.t0??m.t)>=t0).length,
+    (state.predet||[]).map(it=>it.id+"@"+it.time+":"+it.lastFired).join()].join("|");
+  if(markSig!==_stMarkSig){ _stMarkSig=markSig;                 // tick positions are static within the day — rebuild only when the day, claims or queue change
+    track.querySelectorAll(".mark").forEach(m=>m.remove());     // keep #stFill/#stNow
+    for(const mk of (state.marks||[]).filter(m=>(m.t0??m.t)>=t0)){
+      const m=document.createElement("div"); m.className="mark";
+      m.style.left=pct(mk.t0??mk.t)+"%"; m.title=fmtClock(new Date(mk.t))+(mk.intent?" · "+mk.intent:"");
+      track.appendChild(m);
+    }
+    for(const it of (state.predet||[]).filter(it=>it.lastFired!==todayKey)){   // queued sessions still due today — hollow ticks ahead of the now-marker
+      const t=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,it.time).getTime();   // wall-clock minutes, DST-correct — matches when nextDue actually fires
+      const m=document.createElement("div"); m.className="mark future";
+      m.style.left=pct(t)+"%"; m.title=minToHHMM(it.time)+" · "+it.intent+" (queued)";
+      track.appendChild(m);
+    }
   }
   const live=$("stNow"); live.className="snow"+(phase!==null?" on":""); live.style.left=pct(now.getTime())+"%";
 }
@@ -1254,15 +1316,17 @@ function renderStatus(){
 // ===== settings =====
 function explainText(c){ const per=c.budget? (c.stake/c.budget).toFixed(0):0;
   const days=periodDays(c,new Date(),Date.now()), allot=days? c.budget/days : 0, perDay=allot<1?allot.toFixed(2):Math.round(allot);
-  return `Each ${fmtDuration(c.periodMs)} you get <b>${c.budget} credits</b> (≈ <b>${perDay} per day</b>) and stake <b>${c.stake} kr</b>. Credits are only claimable inside a daily <b>${c.windowH||WINDOW_H}-hour window</b> from <b>${minToHHMM(c.windowStart)}</b>. Finish a ${c.block}-min session to claim one${c.breakOn?` (then a ${c.brk}-min break)`:``}. Any of the day's share you don't claim before the window closes is <b>forfeited for good</b> (~${per} kr each). At period end you only lose what you forfeited — claim everything and you owe <b>nothing</b>. Show up daily or lose it. You get <b>${c.restBudget||0} emergency day${(c.restBudget||0)===1?"":"s"}</b> a period — for genuine emergencies only, pre-committed (locked the night before); that day's share is set aside, never forfeited.`; }
+  return `Each ${fmtDuration(c.periodMs)} you get <b>${c.budget} credits</b> (≈ <b>${perDay} per day</b>) and stake <b>${c.stake} kr</b>. Credits are only claimable inside a daily <b>${c.windowH||DEFAULTS.windowH}-hour window</b> from <b>${minToHHMM(c.windowStart)}</b>. Finish a ${c.block}-min session to claim one${c.breakOn?` (then a ${c.brk}-min break)`:``}. Any of the day's share you don't claim before the window closes is <b>forfeited for good</b> (~${per} kr each). At period end you only lose what you forfeited — claim everything and you owe <b>nothing</b>. Show up daily or lose it. You get <b>${c.restBudget||0} emergency day${(c.restBudget||0)===1?"":"s"}</b> a period — for genuine emergencies only, pre-committed (locked the night before); that day's share is set aside, never forfeited.`; }
 // read the plan form live (before Save) — so the explainer recomputes as you type, not just off the saved cfg
 function currentPlanCfg(){
   const days=(rpStart&&rpEnd)? Math.round((rpEnd-rpStart)/86400000)+1 : Math.max(1,Math.round((state.cfg.periodMs||DEFAULTS.periodMs)/86400000));
-  const m=/^(\d{1,2}):(\d{2})$/.exec($("s_winstart").value), wm=m? Math.min(1439,Math.max(0,+m[1]*60+ +m[2])) : DEFAULTS.windowStart;
+  const rawStart=parseHHMM($("s_winstart").value) ?? DEFAULTS.windowStart;
+  const windowH=Math.max(1,Math.min(24,+$("s_winhours").value||DEFAULTS.windowH));
   return { periodMs:days*86400000,
     budget:Math.max(1,+$("s_budget").value||DEFAULTS.budget), block:Math.max(1,+$("s_block").value||DEFAULTS.block),
     brk:Math.max(1,+$("s_brk").value||DEFAULTS.brk), breakOn:$("s_breakon").checked, stake:Math.max(0,+$("s_stake").value||0),
-    windowStart:wm, windowH:Math.max(1,Math.min(24,+$("s_winhours").value||DEFAULTS.windowH)), restBudget:Math.max(0,Math.min(99,+$("s_restbudget").value||0)) };
+    windowStart:Math.min(rawStart,1440-windowH*60), windowH,   // window must fit inside the calendar day — a 23:00+5h window would strand its post-midnight hours (dayWindow anchors to the calendar day)
+    restBudget:Math.max(0,Math.min(99,+$("s_restbudget").value||0)) };
 }
 function updateExplain(){ $("explain").innerHTML=explainText(currentPlanCfg()); }
 // ---- period range picker: tap a start day, tap an end day — a calendar range, not two separate fields ----
@@ -1285,7 +1349,7 @@ function rpRender(){
     html+=`<button type="button" class="${cls}" data-t="${t}"><span class="rp-num">${d}</span></button>`;
   }
   $("rp_grid").innerHTML=html;
-  const sub=$("rp_sub"), fmt=t=>new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  const sub=$("rp_sub"), fmt=t=>fmtDay(new Date(t));
   sub.textContent = (sT!=null && eT!=null) ? `${fmt(sT)} – ${fmt(eT)} · ${Math.round((eT-sT)/86400000)+1} days`
     : sT!=null ? `${fmt(sT)} – pick an end date` : "Pick a start date, then an end date.";
   updateExplain();   // period length feeds the explainer — keep it live as the range changes
@@ -1302,18 +1366,23 @@ $("rp_prev").onclick=()=>{ rpMonth=new Date(rpMonth.getFullYear(),rpMonth.getMon
 $("rp_next").onclick=()=>{ rpMonth=new Date(rpMonth.getFullYear(),rpMonth.getMonth()+1,1); rpRender(); };
 function fillSettings(){
   const base=dateOnly(state.startedAt||Date.now()), dur=state.cfg.periodMs||DEFAULTS.periodMs, days=Math.max(1,Math.round(dur/86400000));
-  rpStart=base; rpEnd=new Date(base.getTime()+(days-1)*86400000); rpMonth=new Date(rpStart.getFullYear(),rpStart.getMonth(),1);
+  rpStart=base; rpEnd=new Date(base); rpEnd.setDate(rpEnd.getDate()+days-1);   // calendar step — fixed-ms would land 23:00 across a DST fall-back and match no midnight cell
+  rpMonth=new Date(rpStart.getFullYear(),rpStart.getMonth(),1);
   rpRender();
   $("s_budget").value=state.cfg.budget; $("s_block").value=state.cfg.block; $("s_brk").value=state.cfg.brk; $("s_breakon").checked=!!state.cfg.breakOn; $("s_stake").value=state.cfg.stake; $("s_winstart").value=minToHHMM(state.cfg.windowStart); $("s_winhours").value=state.cfg.windowH; $("s_restbudget").value=state.cfg.restBudget; $("s_goal").value=state.goal;
   updateExplain(); }
 function savePlan(){ const oldMs=state.cfg.periodMs, oldAnchor=state.startedAt, firstStart=!state.startedAt;
-  state.goal=$("s_goal").value.trim();
   if(rpStart==null || rpEnd==null){ alert("Pick a period start and end date."); return; }
   const anchor=rpStart.getTime();                                              // clock anchors to the picked start day, not "now"
-  state.cfg=currentPlanCfg();                                                  // same parse the live explainer uses (periodMs from the picked range)
-  if(firstStart || anchor!==oldAnchor || state.cfg.periodMs!==oldMs){         // first save, or the picked start/length changed — re-bases the clock
+  const newCfg=currentPlanCfg();                                               // same parse the live explainer uses (periodMs from the picked range)
+  const rebase=firstStart || anchor!==oldAnchor || newCfg.periodMs!==oldMs;    // first save, or the picked start/length changed — re-bases the clock
+  if(rebase && phase!==null){ alert("Finish or cancel the running session first — changing the period re-bases the ledger."); return; }  // else the live session completes into the wiped/new plan
+  state.goal=$("s_goal").value.trim();
+  state.cfg=newCfg;
+  if(rebase){
     state.startedAt=anchor; state.spent=0; state.marks=[]; state.forfeitedCredits=0; state.restDays=[]; state.restedCredits=0;
-    state.settledThrough=anchor; state.periodKey=periodBounds(state.cfg,new Date(),anchor).key;
+    state.settledThrough=Math.max(anchor, Date.now());                         // never bill a window that closed before the plan existed (a 16:00 first save must not instantly forfeit the 09:00–14:00 window)
+    state.periodKey=periodBounds(state.cfg,new Date(),anchor).key;
   }
   fillSettings(); commit(); refreshChart(); render();
   const ps=$("sheet"); if(ps.open) ps.close(); }                              // dismiss the sheet once the plan is saved
@@ -1322,10 +1391,10 @@ function commitRestDay(v){
   const m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec((v||"").trim());
   if(!m){ alert("Use the date format YYYY-MM-DD."); return; }
   const target=new Date(+m[1],+m[2]-1,+m[3]);
-  const todayStart=new Date(); todayStart.setHours(0,0,0,0);
+  const todayStart=dateOnly(new Date());
   if(isNaN(target)||target.getTime()<=todayStart.getTime()){ alert("Emergency days are pre-committed: choose tomorrow or later. Today and past days can't be claimed."); return; }
-  const {end}=periodBounds(state.cfg,new Date(),state.startedAt);
-  if(target.getTime()>=end.getTime()){ alert("That day falls outside this period. You can only rest within the current period."); return; }
+  const {start,end}=periodBounds(state.cfg,new Date(),state.startedAt);
+  if(target.getTime()<start.getTime()||target.getTime()>=end.getTime()){ alert("That day falls outside this period. You can only rest within the current period."); return; }  // a day before a future-dated plan's start would burn the token with zero effect — settlement never scans it
   const k=dayKey(target);
   if(state.restDays.includes(k)){ alert("That day is already an emergency day."); return; }
   state.restDays.push(k); state.restDays.sort(); commit(); render();
@@ -1345,28 +1414,29 @@ function planRestDay(){
 }
 $("restDate").onchange=e=>{ if(e.target.value) commitRestDay(e.target.value); e.target.value=""; };
 function unmarkRestDay(k){                                         // only future, unsettled rest days can be released
-  const todayStart=new Date(); todayStart.setHours(0,0,0,0);
-  const [y,mo,d]=k.split("-").map(Number); const day=new Date(y,mo-1,d);
-  if(day.getTime()<=todayStart.getTime()){ alert("This emergency day is locked in — only future ones can be released."); return; }
+  if(parseDayKey(k).getTime()<=dateOnly(new Date()).getTime()){ alert("This emergency day is locked in — only future ones can be released."); return; }
   state.restDays=state.restDays.filter(x=>x!==k); commit(); render();
 }
 function renderRest(){
   const started=!!state.startedAt;
-  const total=restBudget(state), used=state.restDays.length, left=Math.max(0,total-used);
+  const total=restBudget(state), used=state.restDays.length;
+  const sig=[started,total,state.restDays.join(),dayKey(new Date())].join("|");   // rest days change on explicit action (or midnight locks one) — not every second
+  if(sig===_restSig) return; _restSig=sig;
+  const left=Math.max(0,total-used);
   let toks="";                                                     // remaining = sealed ◆, used = broken ◇
   for(let i=0;i<total;i++) toks+=`<span class="tok${i<left?"":" spent"}">${i<left?"":"✕"}</span>`;
   if(!total) toks='<span class="tok none">none configured — set a budget in Plan</span>';
   $("restCount").innerHTML=toks+(total?`<span class="tokn">${left} of ${total} left</span>`:"");
   $("planRest").disabled=!started||left<=0;
-  const todayStart=new Date(); todayStart.setHours(0,0,0,0);
+  const todayStart=dateOnly(new Date());
   const el=$("restList");
-  if(!state.restDays.length){ el.textContent=started?"":""; return; }
+  if(!state.restDays.length){ el.textContent=""; return; }
   el.innerHTML=state.restDays.slice().sort().map(k=>{
-    const [y,mo,d]=k.split("-").map(Number); const day=new Date(y,mo-1,d);
+    const day=parseDayKey(k);
     const locked=day.getTime()<=todayStart.getTime();
-    const lab=day.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+    const lab=WD_FMT.format(day);
     return locked ? `<span class="restpill locked" title="locked in">${lab} 🔒</span>`
-                  : `<span class="restpill" data-k="${k}" title="click to release">${lab} ✕</span>`;
+                  : `<span class="restpill" data-k="${escapeHtml(k)}" title="click to release">${lab} ✕</span>`;
   }).join(" ");
 }
 $("planRest").onclick=planRestDay;
@@ -1379,17 +1449,18 @@ function checkPredetAuto(now){
   if(!canStart(state, now).ok) return;                               // window closed, no credits, rest day, etc.
   const item=nextDue(state.predet, now, dayKey(now));
   if(!item) return;
+  if(!startBlock(item.intent)) return;                               // consume the item ONLY once the session actually started — startBlock re-checks canStart with a fresh clock and can decline at a window boundary
   if(item.reusable) item.lastFired=dayKey(now);
   else state.predet=state.predet.filter(x=>x.id!==item.id);
   commit(); renderPredet();
-  startBlock(item.intent);
 }
 function addPredet(){
   if(!state.startedAt){ alert("Save your plan first."); return; }
-  const m=/^(\d{1,2}):(\d{2})$/.exec($("pd_time").value), time=m? Math.min(1439,Math.max(0,+m[1]*60+ +m[2])) : null;
+  const time=parseHHMM($("pd_time").value);
   const intent=$("pd_intent").value.trim();
   if(time===null){ alert("Pick a time."); return; }
   if(!intent){ alert("Name the task."); return; }
+  unlockSignals();                                                   // the Queue tap is the one gesture this flow gets — grab notification permission + audio unlock here, or the auto-start ends silent
   state.predet.push({id:Date.now()+"-"+Math.random().toString(36).slice(2), time, intent, reusable:$("pd_repeat").checked, lastFired:null});
   commit(); $("pd_time").value="09:00"; $("pd_intent").value=""; $("pd_repeat").checked=false; renderPredet();
 }
@@ -1401,18 +1472,20 @@ function renderPredet(){
     : "Requires a saved plan — save one in Plan first.";
   $("pd_add").disabled=!started;
   const el=$("predetList"), list=(state.predet||[]).slice().sort((a,b)=>a.time-b.time);
-  if(!list.length){ el.innerHTML='<div class="logempty">Nothing queued — add one below.</div>'; return; }
+  if(!list.length){ el.innerHTML='<div class="logempty">Nothing queued — add one below.</div>'; _pdSig=""; return; }
   const now=new Date(), nowMin=now.getHours()*60+now.getMinutes(), todayKey=dayKey(now);
+  const sig=list.map(it=>it.id+"@"+it.time+":"+it.lastFired).join()+"|"+Math.floor(now.getTime()/60000);   // countdown shows minutes — rebuilding (and killing hover state) 60× per displayed minute buys nothing
+  if(sig===_pdSig) return; _pdSig=sig;
   const nextId=pdOrder(state.predet, todayKey)[0]?.id;
-  const dayStart=new Date(now).setHours(0,0,0,0);
   el.innerHTML=list.map(it=>{
     const fired=it.lastFired===todayKey, isNext=it.id===nextId, due=nowMin>=it.time;
+    const fireTs=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,it.time).getTime();   // wall-clock minutes, DST-correct — matches nextDue's firing rule
     const cls="pditem"+(it.reusable?" daily":"")+(isNext?" next":"")+(fired?" done":"");
     const tags=[];
     if(it.reusable) tags.push('<span class="pdtag'+(isNext?" accent":"")+'">daily</span>');
-    if(isNext) tags.push('<span class="pdcountdown">'+(due?"due now":"in "+fmtShort(dayStart+it.time*60000-now.getTime()))+'</span>');
+    if(isNext) tags.push('<span class="pdcountdown">'+(due?"due now":"in "+fmtShort(fireTs-now.getTime()))+'</span>');
     else if(fired) tags.push('<span class="pdtag">done today</span>');
-    return `<div class="${cls}" data-id="${it.id}"><span class="pddot"></span><span class="pdtime">${minToHHMM(it.time)}</span><span class="pdrow"><span class="pdintent">${escapeHtml(it.intent)}</span>${tags.join("")}</span><span class="pddel" data-del="${it.id}" title="Remove">✕</span></div>`;
+    return `<div class="${cls}" data-id="${escapeHtml(it.id)}"><span class="pddot"></span><span class="pdtime">${minToHHMM(it.time)}</span><span class="pdrow"><span class="pdintent">${escapeHtml(it.intent)}</span>${tags.join("")}</span><span class="pddel" data-del="${escapeHtml(it.id)}" title="Remove">✕</span></div>`;
   }).join("");
 }
 $("pd_add").onclick=addPredet;
@@ -1432,12 +1505,11 @@ function openSheet(tab){ closeCompose(); fillSettings(); renderRest(); renderPre
 // compact composer: collapsed to a FAB, expands on tap; a tap outside or Escape closes it
 function openCompose(){ document.body.classList.add("compose-open"); if(getComputedStyle($("intent")).display!=="none") setTimeout(()=>$("intent").focus(),80); }
 function closeCompose(){ document.body.classList.remove("compose-open"); }
-$("fab").onclick=openCompose;   // legacy; FAB is now display:none (kept harmless)
 $("drawGrab").onclick=()=>{ document.body.classList.contains("compose-open") ? closeCompose() : openCompose(); };   // peek-and-pop: handle toggles the drawer
 $("instTiles").addEventListener("click",e=>{ const b=e.target.closest(".inst-tile"); if(b) startInstant(+b.dataset.min); });
 $("instStop").onclick=cancelBlock;
-$("instTask").addEventListener("keydown",e=>{ if(e.key==="Enter") startInstant(50); });   // Enter = default 50-min block
-document.addEventListener("click",e=>{ if(document.body.classList.contains("compose-open") && !e.target.closest("#ctaBar") && !e.target.closest("#fab")) closeCompose(); });
+$("instTask").addEventListener("keydown",e=>{ if(e.key==="Enter") startInstant(+document.querySelector(".inst-tile[data-default]").dataset.min); });   // Enter = the default tile's length — one source of truth with the visible chips
+document.addEventListener("click",e=>{ if(document.body.classList.contains("compose-open") && !e.target.closest("#ctaBar")) closeCompose(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeCompose(); });
 $("tabPrev").onclick=()=>stepTab(-1); $("tabNext").onclick=()=>stepTab(1);   // desktop arrows
 $("tabDots").addEventListener("click", e=>{ const b=e.target.closest("[data-tab]"); if(b && b.dataset.tab!==curTab){ $("sheet").style.setProperty("--slide", TAB_ORDER.indexOf(b.dataset.tab)>TAB_ORDER.indexOf(curTab)?"18px":"-18px"); showTab(b.dataset.tab); } });
@@ -1445,7 +1517,7 @@ $("tabDots").addEventListener("click", e=>{ const b=e.target.closest("[data-tab]
 //      is always native; a horizontal flick (distance OR velocity) changes tab. Desktop uses the arrows above. ----
 (function(){ const sheet=$("sheet"); let sx=0,sy=0,st=0,horiz=false,dragging=false,pane=null;
   sheet.addEventListener("touchstart", e=>{
-    if(!matchMedia("(max-width:859px)").matches) return;                                    // mobile only
+    if(getComputedStyle($("tabDots")).display==="none") return;                             // mobile only — the dots' CSS media query is the single source of the breakpoint
     if(e.target.closest("input,select,textarea,.tabs")) return;                             // leave text fields + the dot pager alone
     const t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=performance.now(); horiz=false; dragging=true; pane=sheet.querySelector(".pane.active");
   }, {passive:true});
@@ -1478,15 +1550,33 @@ $("importFile").onchange=(e)=>{ if(e.target.files[0]) importData(e.target.files[
 
 // ===== boot =====
 if(DEMO) document.querySelector("header .sub").textContent="demo data — nothing is saved";
-fillSettings(); refreshChart(); resumeSession(); render(); setInterval(render,1000);
+document.addEventListener("pointerdown",()=>beep(0),{once:true,capture:true});   // any first tap unlocks the AudioContext — predet auto-starts carry no gesture of their own
+fillSettings(); refreshChart(); resumeSession(); render();
+setInterval(()=>{ if(document.hidden){                                // hidden tab: skip the full DOM re-render (battery), but keep the predet auto-start alive
+    if(state.startedAt && state.startedAt<=Date.now() && phase===null) checkPredetAuto(new Date());
+  } else render(); },1000);
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){
-  if(phase===null){ state=DEMO?demoState():loadLocal(); fillSettings(); refreshChart(); render(); resumeSession(); }  // reload-after-sleep: restore running session
+  if(phase===null){ state=DEMO?demoState():loadLocal(); fillSettings(); refreshChart(); resumeSession(); render(); }  // reload-after-sleep: resumeSession BEFORE render — render fires checkPredetAuto, which must never see a restorable session as an open slot (the day-10 soak bug, boot got the order right, this path didn't)
   else { render(); lockScreen(); }                                    // still ticking: tick() self-corrects; wake lock auto-released on hide, re-grab it
 }});
-if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("SW:",e));
+window.addEventListener("storage",e=>{ if(e.key===KEY && phase===null && !DEMO && !TESTMODE){   // another tab committed — refresh this idle tab's snapshot so its next commit can't clobber that work
+  state=loadLocal(); fillSettings(); refreshChart(); render();
+}});
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("./sw.js")
+    .then(reg=>{ setInterval(()=>reg.update().catch(()=>{}), 3600000); })   // a tab left open for days otherwise never learns a new version shipped — update checks only run on navigation
+    .catch(e=>console.warn("SW:",e));
+  let hadSW=!!navigator.serviceWorker.controller, swReloaded=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{        // a new SW took over (skipWaiting+claim) — reload once so the page runs the new shell
+    if(!hadSW){ hadSW=true; return; }                                      // first-ever install claiming the page is not an update
+    if(swReloaded || phase!==null) return;                                 // never yank a running session out from under the user
+    swReloaded=true; location.reload();
+  });
+}
 
 // ===== self-check: ?test=1 =====
 if(new URLSearchParams(location.search).get("test")==="1"){
+  TESTMODE=true;                                                   // saveLocal is a no-op for the whole test page — a crash mid-soak can never strand synthetic state in the real key
   const c={periodMs:7*86400000,budget:20,block:50,brk:10,stake:200};
   console.assert(periodDays(c,new Date(),Date.now())===7, "default (week-length) = 7 days");
   console.assert(periodDays({...c,periodMs:9*86400000}, new Date(2026,1,20), new Date(2026,1,15).getTime())===9, "custom 9-day period = 9 days");
@@ -1498,6 +1588,15 @@ if(new URLSearchParams(location.search).get("test")==="1"){
   console.assert(n.wasted===150 && n.spent===0 && n.periodKey!=="W-bogus", "forfeiture on rolling period change, got "+n.wasted);
   console.assert(escapeHtml('<img src=x onerror=alert(1)>')==='&lt;img src=x onerror=alert(1)&gt;', "intent text is HTML-escaped in the log");
   console.assert(escapeHtml({})==='[object Object]', "escapeHtml coerces a non-string intent instead of throwing (a throw here loops completeWork → runaway spent)");
+  console.assert(parseHHMM("09:05")===545 && parseHHMM("9:05")===545 && parseHHMM("junk")===null, "parseHHMM parses and rejects");
+  console.assert(fmtMMSS(125000)==="02:05" && fmtMMSS(-5)==="00:00", "fmtMMSS formats and clamps");
+  console.assert(dayKey(parseDayKey("2026-06-23"))==="2026-06-23", "parseDayKey is dayKey's inverse");
+  console.assert(normalize(123).cfg.budget===DEFAULTS.budget, "a primitive in storage resets to defaults instead of TypeError-ing the boot");
+  console.assert(normalize({cfg:{budget:"abc"}}).cfg.budget===DEFAULTS.budget, "non-numeric cfg fields are repaired, not NaN-poisoning the ledger");
+  console.assert(normalize({cfg:{windowStart:1380,windowH:5}}).cfg.windowStart===1140, "window is clamped to fit the calendar day (23:00+5h → 19:00+5h)");
+  { const a22=Date.now()-22*86400000;   // 3 whole 7-day periods elapsed → last period's remainder (200) + 2 fully-skipped stakes (400)
+    const sk=normalize({cfg:{...c}, startedAt:a22, periodKey:"P"+new Date(a22).toISOString(), spent:0, marks:[], wasted:0, forfeitedCredits:0, settledThrough:0});
+    console.assert(Math.round(sk.wasted)===600, "skipped periods bill their full stake too, got "+sk.wasted); }
   // daily 5-hour window model
   const cw={budget:7,block:50,brk:10,stake:70,windowStart:540};   // default week-length period, 09:00–14:00, 1 credit/day, 10 kr each
   console.assert(windowState(cw,new Date(2026,5,22,8,0)).phase==="before","before 09:00 window");
@@ -1544,7 +1643,7 @@ if(new URLSearchParams(location.search).get("test")==="1"){
     const RealDate=Date; let CLOCK=0, fails=0;                       // virtual clock: new Date()/Date.now() → CLOCK, arg'd Date() stays real
     const A=(cond,msg)=>{ if(!cond){ fails++; console.error("SOAK FAIL: "+msg); } };
     // snapshot everything the sim mutates, restore in finally — never touch the user's real data
-    const SNAP={ ls:localStorage.getItem(KEY), state, phase, phaseEndTs, ticker, curIntent, curT0 };
+    const SNAP={ ls:localStorage.getItem(KEY), state, phase, phaseEndTs, curIntent, curT0, curFree };
     try{
       globalThis.Date=class extends RealDate{ constructor(...a){ a.length? super(...a): super(CLOCK); } static now(){ return CLOCK; } };
       if(ticker) clearInterval(ticker);                              // start from a clean timer — the page may have a live/resumed session
@@ -1648,7 +1747,8 @@ if(new URLSearchParams(location.search).get("test")==="1"){
       console.log(fails===0 ? "Lapsr SOAK PASSED — 30-day month + reset, "+claimed+" sessions, 0 lost" : "Lapsr SOAK: "+fails+" FAILURES");
     } finally {
       globalThis.Date=RealDate;
-      state=SNAP.state; phase=SNAP.phase; phaseEndTs=SNAP.phaseEndTs; ticker=SNAP.ticker; curIntent=SNAP.curIntent; curT0=SNAP.curT0;
+      state=SNAP.state; phase=SNAP.phase; phaseEndTs=SNAP.phaseEndTs; curIntent=SNAP.curIntent; curT0=SNAP.curT0; curFree=SNAP.curFree;
+      clearInterval(ticker); ticker = SNAP.phase!==null ? setInterval(tick,250) : null;   // the pre-test interval was cleared — re-arm a live one, not the dead snapshotted id
       if(SNAP.ls!=null) localStorage.setItem(KEY,SNAP.ls); else localStorage.removeItem(KEY);
       try{ render(); }catch(e){}                                     // repaint with the real state restored
     }
