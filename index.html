@@ -239,7 +239,22 @@
   .heat .hd.t{box-shadow:0 0 0 1.5px var(--accent)}                            /* today */
   /* quit-a-habit panel — standalone contract, independent of plan mode: the 30-day chain + owning the lapse */
   .g-quit{text-align:center}
-  .g-quit #quitForm{max-width:340px;margin:0 auto;text-align:left}
+  .g-quit #quitForm{max-width:420px;margin:0 auto;text-align:left}
+  @media(max-width:859px){ .g-quit .grid2{grid-template-columns:1fr} }   /* narrow card — fields stack */
+  /* the sign form folds away behind one line until wanted — the panel stays a whisper, not a form */
+  .qsign summary{cursor:pointer;color:var(--dim);font-size:13px;letter-spacing:.02em;text-align:center;padding:2px 0}
+  .qsign summary:hover{color:var(--accent)}
+  .qsign[open] summary{color:var(--txt);margin-bottom:10px}
+  /* desktop: the active contract reads as one compact wrapped row under the focus hero */
+  @media(min-width:860px){
+    .g-quit .quitblock{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px 20px}
+    .g-quit .quitblock .qhead{display:none}
+    .g-quit .quitblock .heat,.g-quit .quitblock .actions{margin:0}
+    .g-quit #quitActive{display:flex;align-items:center;justify-content:center;gap:14px;margin:6px auto 0;max-width:none}
+    .g-quit #quitActive .actions{margin:0}
+    .g-quit #quitContract{display:none}   /* the stats row already carries the numbers — desktop keeps only the abandon action */
+    .g-quit #q_abandon{padding:7px 14px;font-size:12px}
+  }
   .quitblock{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
   /* plan nudge — standby invitation while no plan exists; gone the moment one is saved (or a session runs) */
   .g-plannudge{text-align:center}
@@ -509,13 +524,13 @@
     main{display:none}
     header{flex:none;padding:14px 32px 2px;align-items:flex-start;text-align:left;margin:0;max-width:none}
     .hero-col{flex:1;min-height:0;max-width:none;width:100%;margin:0;padding:10px 24px 16px;
-      display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:auto auto auto 1fr 1fr;
-      grid-template-areas:"instant instant" "status status" "focus quit" "focus list" "focus chart";gap:14px}
-    /* quit: a calm card in the right rail — same column layout as mobile, no cramming */
+      display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:auto auto 1fr 1fr auto;
+      grid-template-areas:"instant instant" "status status" "focus list" "focus chart" "quit chart";gap:14px}
+    /* quit: a calm card under the focus hero — the left column has the spare height, the rail keeps its room */
     .g-quit{grid-area:quit;display:flex;flex-direction:column;justify-content:center}
     /* plan nudge gets its own full-width row only while it exists (no plan yet) */
-    body.no-plan .hero-col{grid-template-rows:auto auto auto auto 1fr 1fr;
-      grid-template-areas:"instant instant" "nudge nudge" "status status" "focus quit" "focus list" "focus chart"}
+    body.no-plan .hero-col{grid-template-rows:auto auto auto 1fr 1fr auto;
+      grid-template-areas:"instant instant" "nudge nudge" "status status" "focus list" "focus chart" "quit chart"}
     .g-plannudge{grid-area:nudge}
 
     /* status: a dashboard strip of FOUR ordered groups — Period · Credits · Progress · At-risk —
@@ -568,7 +583,7 @@
     .g-instant #instStop{flex:none}
     /* running: promote the instant session INTO the focus hero (no empty hole) — big countdown + bar + Stop.
        Drop the now-empty top strip row so nothing gaps at the top. */
-    body.free-live .hero-col{grid-template-rows:auto auto 1fr 1fr;grid-template-areas:"status status" "focus quit" "focus list" "focus chart"}
+    body.free-live .hero-col{grid-template-rows:auto 1fr 1fr auto;grid-template-areas:"status status" "focus list" "focus chart" "quit chart"}
     body.free-live .g-plannudge{display:none}   /* mid-session is not the moment to pitch planning */
     body.free-live .g-instant{grid-area:focus;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:24px;padding:20px 34px;
       border-color:color-mix(in srgb,var(--accent) 40%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent),var(--shadow)}
@@ -664,12 +679,15 @@
   <section class="panel g-quit" id="quitPanel">
     <h2>Quit a habit</h2>
     <div id="quitForm">
-      <label for="q_name">Habit to quit</label>
-      <input id="q_name" placeholder="e.g. doomscrolling, nicotine, sugar" />
-      <label for="q_stake">Deposit for the 30 days (kr)</label>
-      <input id="q_stake" type="number" min="0" step="10" value="300" />
-      <div class="actions"><button id="q_start" class="primary" type="button">Sign the 30-day contract</button></div>
-      <div class="hint">Every clean day quietly secures its share; a lapse burns that day — never the week, never your record. Abandoning burns whatever is left.</div>
+      <details class="qsign">
+        <summary>Sign a 30-day quit contract — put money on a clean month</summary>
+        <div class="grid2">
+          <div><label for="q_name">Habit to quit</label><input id="q_name" placeholder="e.g. doomscrolling, nicotine, sugar" /></div>
+          <div><label for="q_stake">Deposit for the 30 days (kr)</label><input id="q_stake" type="number" min="0" step="10" value="300" /></div>
+          <div class="actions"><button id="q_start" class="primary" type="button">Sign the 30-day contract</button></div>
+        </div>
+        <div class="hint">Every clean day quietly secures its share; a lapse burns that day — never the week, never your record. Abandoning burns whatever is left.</div>
+      </details>
     </div>
     <div class="quitblock" id="quitBlock" hidden></div>
     <div id="quitActive" style="display:none">
