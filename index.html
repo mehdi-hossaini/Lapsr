@@ -574,7 +574,8 @@
     .g-instant .inst-runtask{font-size:12px;color:var(--dim);flex:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .g-instant #instStop{flex:none}
     /* running: promote the instant session INTO the focus hero (its own row collapses; the grid holds) */
-    /* a running free session is the one thing that matters — centre it, hide the dashboard (like zen) */
+    /* a running free session is the one thing that matters — centre it in the whole viewport, hide the dashboard (like zen) */
+    body.free-live .hero-col{align-items:center;justify-content:center}   /* centre the running card in the viewport, both axes */
     body.free-live .qcol-a,body.free-live .qcol-c{display:none}
     body.free-live .qcol-b{flex:1;align-items:center;justify-content:center}
     body.free-live .g-instant{width:min(560px,92%);flex:none;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:24px;padding:20px 34px;
