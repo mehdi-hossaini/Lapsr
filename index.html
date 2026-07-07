@@ -557,10 +557,9 @@
     .g-status .risk .lost{font-size:10.5px}
 
     /* instant: a horizontal quick-launch strip — DESKTOP approach uses a progress BAR, not a ring */
-    .g-instant{display:flex;flex-direction:column;gap:12px;padding:16px 24px;text-align:left}   /* modes rail is narrow — stack input over tiles */
-    .g-instant h2{display:none}
-    .g-instant .inst-idle{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%}
-    .g-instant #instTask{margin:0;min-width:0;text-align:left;padding:9px 16px}
+    .g-instant{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:14px;padding:22px 24px}   /* centred card, mirrors the focus hero */
+    .g-instant .inst-idle{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:420px}
+    .g-instant #instTask{margin:0;min-width:0;text-align:center;padding:10px 16px}
     .g-instant .inst-tiles{display:flex;gap:10px;justify-content:center}
     .g-instant .inst-tile{flex-direction:row;align-items:baseline;gap:6px;padding:9px 16px;border-radius:999px;box-shadow:none}
     .g-instant .inst-tile .m{font-size:17px}
