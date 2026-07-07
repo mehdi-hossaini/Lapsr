@@ -528,16 +528,19 @@
     .hero-col{flex:1;min-height:0;max-width:none;width:100%;margin:0;padding:10px 24px 16px;
       display:grid;grid-template-columns:300px minmax(0,1.25fr) minmax(0,1fr);
       grid-template-rows:1fr 1fr auto;
-      grid-template-areas:"status focus list" "status focus chart" "quit instant chart";gap:14px}
+      grid-template-areas:"status focus list" "status focus chart" "quit instant chart";gap:18px}
     .g-quit{grid-area:quit;display:flex;flex-direction:column;justify-content:center}
     /* plan nudge gets a full-width bottom row only while it exists (no plan yet) */
     body.no-plan .hero-col{grid-template-rows:1fr 1fr auto auto;
       grid-template-areas:"status focus list" "status focus chart" "quit instant chart" "nudge nudge nudge"}
     .g-plannudge{grid-area:nudge}
 
-    /* status: the pressure rail — the mobile card's own vertical flow, docked left. Countdown,
-       credits, meters and the at-risk figure read top-to-bottom and never fight the timer for width. */
+    /* status: the pressure rail — docked left, and each fact appears exactly ONCE on the dashboard:
+       the credit dots duplicate the stat numbers, the period bar duplicates the countdown, and the
+       window bar already lives on the focus card's track — all three go. Mobile keeps the full card. */
     .g-status{grid-area:status;display:flex;flex-direction:column;justify-content:center}
+    .g-status .credits,.g-status .usage{display:none}
+    .g-chart .heat{display:none}   /* the chart's own ticks tell the day story here; the dot calendar stays mobile */
     .g-status .st-period .countdown{font-size:26px;letter-spacing:.01em}
     .g-status .st-period .sub2{margin-top:4px;font-size:10.5px}
     .g-status .stat .n{font-size:24px}
