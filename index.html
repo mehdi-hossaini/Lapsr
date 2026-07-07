@@ -285,11 +285,9 @@
   /* renewing is the good outcome — give it the accent */
   .quitblock [data-qact="renew"]{min-width:200px;border-radius:999px;border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--accent)}
   .quitblock [data-qact="renew"]:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
-  #quitContract{display:none}   /* the card already carries every number */
-  #quitActive{margin:6px auto 0;text-align:center}
-  /* abandon is a last resort — a faint borderless text link, easy to ignore until you want it */
-  #q_abandon{background:none;border:0;padding:4px;font-size:10.5px;letter-spacing:.04em;color:var(--dim);opacity:.4}
-  #q_abandon:hover{opacity:1;color:var(--hue-quit)}
+  /* abandon lives in the settings sheet now — a quiet danger action under the contract summary */
+  #quitContract{margin-bottom:12px}
+  #q_abandon:hover{border-color:var(--hue-quit);color:var(--hue-quit)}
   .hint{color:var(--dim);font-size:12px;margin-top:16px;line-height:1.7}
   /* focus-session status block: live state line over a window-fill bar — elapsed window fills, claimed sessions punch through as ticks, now-edge glows */
   .sblock{margin-top:24px}
@@ -692,10 +690,6 @@
       </details>
     </div>
     <div class="quitblock" id="quitBlock" hidden></div>
-    <div id="quitActive" style="display:none">
-      <div class="hint" id="quitContract"></div>
-      <div class="actions"><button id="q_abandon" class="ghost" type="button">Abandon contract</button></div>
-    </div>
   </section>
 
   <!-- PLAN NUDGE: standby card while no plan exists — disappears once one is saved -->
@@ -913,6 +907,11 @@
         <input id="importFile" type="file" accept="application/json,.json" hidden />
       </div>
       <div class="hint">Data lives only on this device. Export a JSON backup, or import it on another device to move your credits, plan, and ledger across.</div>
+    </div>
+    <div class="bkgroup" id="quitActive" style="display:none">
+      <label>Quit contract</label>
+      <div class="hint" id="quitContract"></div>
+      <div class="actions"><button id="q_abandon" class="ghost" type="button">Abandon contract</button></div>
     </div>
   </div>
 
