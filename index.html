@@ -229,24 +229,27 @@
   /* period heatmap — one cell per day, the whole period at a glance under the pace chart */
   .heat{display:flex;flex-wrap:wrap;gap:3px;margin-top:16px;justify-content:center}
   .heat .hd{width:11px;height:11px;border-radius:3px;background:color-mix(in srgb,var(--line) 45%,transparent)}
-  /* one hue, opacity steps — a calm monochrome scale; missed days recede in grey rather than shout in red */
-  .heat .hd.f{background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--line) 45%,transparent)}   /* future */
+  /* dots, not boxes — bordered squares read as empty checkboxes. One hue, opacity steps. */
+  .heat .hd{border-radius:50%}
+  .heat .hd.f{background:color-mix(in srgb,var(--line) 30%,transparent)}       /* future — faint solid dot, no outline */
   .heat .hd.c2{background:color-mix(in srgb,var(--accent) 40%,transparent)}   /* partially claimed */
   .heat .hd.c3{background:var(--accent)}                                       /* full day claimed */
-  .heat .hd.x{background:color-mix(in srgb,var(--dim) 28%,transparent)}        /* closed unclaimed */
-  .heat .hd.r{background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dim) 60%,transparent)}    /* emergency day — hollow */
+  .heat .hd.x{background:color-mix(in srgb,var(--dim) 32%,transparent)}        /* closed unclaimed */
+  .heat .hd.r{background:transparent;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dim) 60%,transparent)}  /* emergency day — hollow ring */
   .heat .hd.t{box-shadow:0 0 0 1.5px var(--accent)}                            /* today */
-  /* quit-a-habit panel — standalone contract, independent of plan mode: the 30-day chain + the two moves */
+  /* quit-a-habit panel — standalone contract, independent of plan mode: the 30-day chain + owning the lapse */
   .g-quit{text-align:center}
   .g-quit #quitForm{max-width:340px;margin:0 auto;text-align:left}
-  .g-quit .planhint{margin-top:22px;padding-top:16px;border-top:1px solid color-mix(in srgb,var(--line) 45%,transparent)}
-  .linklike{background:none;border:0;padding:0;color:var(--accent);font:inherit;font-size:inherit;cursor:pointer;letter-spacing:inherit}
-  .linklike:hover{color:var(--accent-dk)}
   .quitblock{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+  /* plan nudge — standby invitation while no plan exists; gone the moment one is saved (or a session runs) */
+  .g-plannudge{text-align:center}
+  .g-plannudge .hint{max-width:400px;margin:0 auto 18px}
+  .g-plannudge .actions{justify-content:center;margin-top:0}
+  body:not(.no-plan) .g-plannudge{display:none}
   .quitblock .qhead{font-size:10.5px;text-transform:uppercase;letter-spacing:.18em;color:var(--dim);font-weight:500}
   .quitblock .qname{font:500 15px/1.4 'Inter',system-ui,sans-serif;color:var(--txt)}
   .quitblock .heat{margin-top:2px;max-width:340px}
-  .quitblock .heat .hd{width:8px;height:8px;border-radius:2px}
+  .quitblock .heat .hd{width:8px;height:8px}
   .quitblock .heat .hd.x{background:color-mix(in srgb,var(--hue-quit) 45%,transparent)}   /* a lapse is a real loss — it may show it */
   .quitblock .qnums{font:500 12px/1.6 'JetBrains Mono',ui-monospace,monospace;color:var(--dim);font-variant-numeric:tabular-nums}
   .quitblock .qnums b{color:var(--txt);font-weight:500}
@@ -507,22 +510,13 @@
     header{flex:none;padding:14px 32px 2px;align-items:flex-start;text-align:left;margin:0;max-width:none}
     .hero-col{flex:1;min-height:0;max-width:none;width:100%;margin:0;padding:10px 24px 16px;
       display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:auto auto auto 1fr 1fr;
-      grid-template-areas:"instant instant" "quit quit" "status status" "focus list" "focus chart";gap:14px}
-    /* quit: a horizontal strip like the instant launcher — form or contract inline */
-    .g-quit{grid-area:quit;display:flex;align-items:center;justify-content:center;gap:20px;padding:12px 24px}
-    .g-quit h2{display:none}
-    .g-quit #quitForm{display:flex;align-items:end;gap:12px;max-width:none;flex:1}
-    .g-quit #quitForm label{margin:0 0 5px}
-    .g-quit #quitForm .actions{margin:0}
-    .g-quit #quitForm .hint{display:none}
-    .g-quit #quitForm > input#q_name{flex:2}
-    .g-quit #quitForm > input#q_stake{flex:0 0 130px}
-    .g-quit .quitblock{flex-direction:row;align-items:center;gap:20px;flex:1;justify-content:center;flex-wrap:wrap}
-    .g-quit .quitblock .heat{margin:0}
-    .g-quit .quitblock .actions{margin:0}
-    .g-quit #quitActive{margin:0;display:flex;align-items:center;gap:14px}
-    .g-quit #quitActive .actions{margin:0}
-    .g-quit .planhint{margin:0;padding:0;border:0;flex:none}
+      grid-template-areas:"instant instant" "status status" "focus quit" "focus list" "focus chart";gap:14px}
+    /* quit: a calm card in the right rail — same column layout as mobile, no cramming */
+    .g-quit{grid-area:quit;display:flex;flex-direction:column;justify-content:center}
+    /* plan nudge gets its own full-width row only while it exists (no plan yet) */
+    body.no-plan .hero-col{grid-template-rows:auto auto auto auto 1fr 1fr;
+      grid-template-areas:"instant instant" "nudge nudge" "status status" "focus quit" "focus list" "focus chart"}
+    .g-plannudge{grid-area:nudge}
 
     /* status: a dashboard strip of FOUR ordered groups — Period · Credits · Progress · At-risk —
        each in its own cell divided by a hairline. Fixed widths + nowrap so ticking numbers never
@@ -574,7 +568,8 @@
     .g-instant #instStop{flex:none}
     /* running: promote the instant session INTO the focus hero (no empty hole) — big countdown + bar + Stop.
        Drop the now-empty top strip row so nothing gaps at the top. */
-    body.free-live .hero-col{grid-template-rows:auto auto 1fr 1fr;grid-template-areas:"quit quit" "status status" "focus list" "focus chart"}
+    body.free-live .hero-col{grid-template-rows:auto auto 1fr 1fr;grid-template-areas:"status status" "focus quit" "focus list" "focus chart"}
+    body.free-live .g-plannudge{display:none}   /* mid-session is not the moment to pitch planning */
     body.free-live .g-instant{grid-area:focus;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:24px;padding:20px 34px;
       border-color:color-mix(in srgb,var(--accent) 40%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent),var(--shadow)}
     body.free-live .g-instant h2{display:block;margin:0;color:var(--accent)}
@@ -681,7 +676,13 @@
       <div class="hint" id="quitContract"></div>
       <div class="actions"><button id="q_abandon" class="ghost" type="button">Abandon contract</button></div>
     </div>
-    <div class="hint planhint">Building something long-term instead? <button type="button" class="linklike" id="quitToPlan">Organize it in Plan mode</button></div>
+  </section>
+
+  <!-- PLAN NUDGE: standby card while no plan exists — disappears once one is saved -->
+  <section class="panel g-plannudge" id="planNudge">
+    <h2>Plan mode</h2>
+    <p class="hint">Building something long-term — a goal, a habit of showing up, an organized week? Set a credit budget, a daily window and a real stake. Use it or lose it.</p>
+    <div class="actions"><button class="primary" id="nudgePlan" type="button">Set up your plan</button></div>
   </section>
 
   <!-- STATUS: period timer + credits + at-risk, all in one -->
@@ -1651,23 +1652,17 @@ function renderQuit(){
   }
   const nums=st.over
     ? `contract complete — <b>${Math.round(st.secured)} kr</b> secured · ${Math.round(st.burned)} kr burned · best run <b>${st.best}d</b>`
-    : `day <b>${st.dayN}</b>/${q.days} · run <b>${st.run}d</b> (best ${st.best}d) · <b>${Math.round(st.secured)} kr</b> safe · ${Math.round(st.burned)} kr burned · ${q.urges} urges ridden`;
+    : `day <b>${st.dayN}</b>/${q.days} · run <b>${st.run}d</b> (best ${st.best}d) · <b>${Math.round(st.secured)} kr</b> safe · ${Math.round(st.burned)} kr burned`;
   const btns=st.over
     ? `<button class="ghost" type="button" data-qact="renew">Sign a new 30-day term</button>`
-    : `<button class="ghost" type="button" data-qact="urge" ${phase!==null?"disabled":""}>Ride the urge · 10 min</button>
-       <button class="ghost qlapse" type="button" data-qact="lapse" ${st.todayLapsed?"disabled":""}>${st.todayLapsed?"lapsed — tomorrow is clean":"I slipped"}</button>`;
+    : `<button class="ghost qlapse" type="button" data-qact="lapse" ${st.todayLapsed?"disabled":""}>${st.todayLapsed?"lapsed — tomorrow is clean":"I slipped"}</button>`;
   el.innerHTML=`<span class="qhead">quitting</span><span class="qname">${escapeHtml(q.name)}</span>
     <div class="heat">${chain}</div><div class="qnums">${nums}</div><div class="actions">${btns}</div>`;
 }
 $("quitBlock").addEventListener("click", e=>{
   const b=e.target.closest("[data-qact]"); if(!b||!state.quit) return;
   const q=state.quit, st=quitStats(q, Date.now());
-  if(b.dataset.qact==="urge"){
-    if(phase!==null) return;
-    q.urges++; commit();
-    $("instTask").value="ride the urge — "+q.name;
-    startInstant(10);                                              // cravings crest and pass — outlast this one
-  } else if(b.dataset.qact==="lapse"){
+  if(b.dataset.qact==="lapse"){
     const tKey=dayKey(Date.now());
     if(q.lapses.includes(tKey)) return;
     if(!confirm(`Mark a lapse for today? It burns ${Math.round(st.share)} kr — the day, never the week. Tomorrow starts clean.`)) return;
@@ -1693,7 +1688,7 @@ $("q_start").onclick=()=>{
   $("q_name").value="";
   commit(); render();
 };
-$("quitToPlan").onclick=()=>openSheet("plan");
+$("nudgePlan").onclick=()=>openSheet("plan");
 $("q_abandon").onclick=()=>{
   const q=state.quit; if(!q) return;
   const st=quitStats(q, Date.now());
