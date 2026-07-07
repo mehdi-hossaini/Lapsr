@@ -257,9 +257,13 @@
   .quitblock{display:flex;flex-direction:column;align-items:center;text-align:center}
   .q-eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.22em;color:var(--dim);font-weight:500}
   .q-name{font:500 18px/1.3 'Inter',system-ui,sans-serif;color:var(--txt);margin-top:3px}
-  .q-hero{display:flex;flex-direction:column;align-items:center;gap:1px;margin:16px 0 2px}
-  .q-streak{font:500 46px/1 'JetBrains Mono',ui-monospace,monospace;color:var(--accent);font-variant-numeric:tabular-nums}
-  .q-streaklab{font-size:11px;letter-spacing:.05em;color:var(--dim)}
+  /* streak as a row: title left, number right */
+  .q-hero{display:flex;align-items:center;justify-content:space-between;width:100%;gap:12px;margin:16px 0 4px;
+    padding-top:15px;border-top:1px solid color-mix(in srgb,var(--line) 45%,transparent)}
+  .q-herolab{display:flex;flex-direction:column;gap:2px;text-align:left}
+  .q-htitle{font:500 14px/1 'Inter',system-ui,sans-serif;color:var(--txt)}
+  .q-best{font-size:11px;letter-spacing:.03em;color:var(--dim)}
+  .q-streak{font:500 44px/1 'JetBrains Mono',ui-monospace,monospace;color:var(--accent);font-variant-numeric:tabular-nums}
   .q-chain{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:300px;margin:15px 0 16px}
   .q-chain .hd{width:9px;height:9px;border-radius:50%;background:color-mix(in srgb,var(--line) 34%,transparent)}
   .q-chain .hd.c3{background:var(--accent)}                                        /* clean day */
@@ -1711,11 +1715,10 @@ function renderQuit(){
       <div class="q-fig"><span class="q-fignum q-risk">${st.over?Math.round(st.burned):atStake} kr</span><span class="q-figlab">${st.over?"burned":"on the line"}</span></div>
     </div>`;
   const body=st.over
-    ? `<div class="q-hero"><span class="q-streak">✓</span><span class="q-streaklab">contract complete</span></div>
+    ? `<div class="q-hero"><span class="q-herolab"><span class="q-htitle">Contract complete</span><span class="q-best">best run ${st.best} of ${q.days} days</span></span><span class="q-streak">✓</span></div>
        <div class="q-chain">${chain}</div>${money}
-       <div class="q-meta">best run <b>${st.best}</b> days over ${q.days}</div>
        <div class="actions"><button class="ghost" type="button" data-qact="renew">Start a new 30-day term</button></div>`
-    : `<div class="q-hero"><span class="q-streak">${st.run}</span><span class="q-streaklab">day streak${st.best>st.run?` · best ${st.best}`:``}</span></div>
+    : `<div class="q-hero"><span class="q-herolab"><span class="q-htitle">Day streak</span><span class="q-best">best ${st.best} ${st.best===1?"day":"days"}</span></span><span class="q-streak">${st.run}</span></div>
        <div class="q-chain">${chain}</div>${money}
        <div class="q-meta">day ${st.dayN} of ${q.days}${st.burned>0?` · <span class="burned">${Math.round(st.burned)} kr burned</span>`:``}</div>
        <div class="actions"><button class="ghost qlapse" type="button" data-qact="lapse" ${st.todayLapsed?"disabled":""}>${st.todayLapsed?"lapsed — tomorrow is clean":"I slipped today"}</button></div>`;
