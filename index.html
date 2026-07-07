@@ -124,14 +124,15 @@
   header .sub{color:var(--dim);font-size:12.5px;font-weight:300;letter-spacing:.1em}
   main{max-width:600px;margin:0 auto;padding:24px 32px 96px;display:flex;flex-direction:column;background:var(--bg)}
   .hero-col{max-width:600px;margin:0 auto;padding:24px 32px 24px;width:100%;display:flex;flex-direction:column;background:var(--bg)}
+  .qcol{display:contents}   /* mobile: wrappers vanish, cards flatten into the single column stack; desktop turns them into flex columns */
   .panel{padding:56px 4px;border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
   .panel.first{border-top:0;text-align:center}
   /* section colour variants — MOBILE ONLY. The tints follow the linear stack order (1·3·5 base, 2 & 4 faint hues).
      On desktop the panels are a grid, so DOM-order tints land on unrelated neighbouring cards and look random —
      there every card stays the base surface for a calm, uniform layout. */
   @media(max-width:859px){
-    .hero-col > .panel:nth-of-type(3){background:var(--sec-2)}   /* status (quit panel now sits at 2) */
-    .hero-col > .panel:nth-of-type(5){background:var(--sec-4)}   /* completed list */
+    .g-status{background:var(--sec-2)}     /* quiet section tints — targeted by class since the qcol wrappers break nth-of-type */
+    .g-list{background:var(--sec-4)}
     .moreinfo .panel:nth-of-type(2){background:var(--sec-2)}
   }
   @media(max-width:680px){ header{padding:56px 22px 12px} main{padding:16px 22px 88px} .hero-col{padding:16px 22px 16px} .panel{padding:48px 2px} }
@@ -523,22 +524,21 @@
     .hero{min-height:100vh;display:flex;flex-direction:column}
     main{display:none}
     header{flex:none;padding:14px 32px 2px;align-items:flex-start;text-align:left;margin:0;max-width:none}
-    /* command center: pressure rail | the one thing to do | review rail. Cards size to their CONTENT
-       (align-items:start) — no spanning, so a tall Completed list can't stretch the status card into a
-       column of empty space. Each rail stacks top-down; the page scrolls if a rail runs long. */
+    /* command center: three independent flex columns — modes rail | focus hero | review rail. Each
+       column packs its cards tight top-down (18px between siblings), so a tall card in one column can
+       never open a void in another. Columns are top-aligned; the page scrolls if one runs long. */
     .hero-col{flex:1;min-height:0;max-width:none;width:100%;margin:0;padding:10px 24px 16px;
-      display:grid;grid-template-columns:300px minmax(0,1.3fr) minmax(0,1fr);
-      grid-auto-rows:min-content;align-items:start;
-      grid-template-areas:"status focus list" "quit instant chart";gap:18px}
-    .g-quit{grid-area:quit;display:flex;flex-direction:column;justify-content:center}
-    /* plan nudge gets a full-width bottom row only while it exists (no plan yet) */
-    body.no-plan .hero-col{grid-template-areas:"status focus list" "quit instant chart" "nudge nudge nudge"}
-    .g-plannudge{grid-area:nudge}
+      display:flex;flex-direction:row;align-items:flex-start;gap:18px}
+    .qcol{display:flex;flex-direction:column;gap:18px;min-width:0}
+    .qcol-a{flex:0 1 340px}                              /* modes rail: instant, quit, nudge, status */
+    .qcol-b{flex:1 1 460px}                              /* the one thing to do — focus hero, isolated */
+    .qcol-c{flex:1 1 360px}                              /* review rail: completed, chart */
+    .g-quit{display:flex;flex-direction:column;justify-content:center}
 
     /* status: the pressure rail — docked left, and each fact appears exactly ONCE on the dashboard:
        the credit dots duplicate the stat numbers, the period bar duplicates the countdown, and the
        window bar already lives on the focus card's track — all three go. Mobile keeps the full card. */
-    .g-status{grid-area:status;display:flex;flex-direction:column;justify-content:center}
+    .g-status{display:flex;flex-direction:column;justify-content:center}
     .g-status .credits,.g-status .usage{display:none}
     .g-chart .heat{display:none}   /* the chart's own ticks tell the day story here; the dot calendar stays mobile */
     .g-status .st-period .countdown{font-size:26px;letter-spacing:.01em}
@@ -553,7 +553,7 @@
     .g-status .risk .lost{font-size:10.5px}
 
     /* instant: a horizontal quick-launch strip — DESKTOP approach uses a progress BAR, not a ring */
-    .g-instant{grid-area:instant;display:flex;align-items:center;gap:18px;padding:12px 24px;text-align:left}
+    .g-instant{display:flex;flex-direction:column;gap:12px;padding:16px 24px;text-align:left}   /* modes rail is narrow — stack input over tiles */
     .g-instant h2{display:none}
     .g-instant .inst-idle{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%}
     .g-instant #instTask{margin:0;min-width:0;text-align:left;padding:9px 16px}
@@ -571,8 +571,11 @@
     .g-instant .inst-runtask{font-size:12px;color:var(--dim);flex:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .g-instant #instStop{flex:none}
     /* running: promote the instant session INTO the focus hero (its own row collapses; the grid holds) */
-    body.free-live .g-plannudge{display:none}   /* mid-session is not the moment to pitch planning */
-    body.free-live .g-instant{grid-area:focus;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:24px;padding:20px 34px;
+    /* a running free session is the one thing that matters — centre it, hide the dashboard (like zen) */
+    body.free-live .qcol-b,body.free-live .qcol-c{display:none}
+    body.free-live .g-quit,body.free-live .g-plannudge,body.free-live .g-status{display:none}
+    body.free-live .qcol-a{flex:1;align-items:center;justify-content:center}
+    body.free-live .g-instant{width:min(560px,92%);flex:none;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:24px;padding:20px 34px;
       border-color:color-mix(in srgb,var(--accent) 40%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent),var(--shadow)}
     body.free-live .g-instant h2{display:block;margin:0;color:var(--accent)}
     body.free-live .g-instant .inst-run{flex-direction:column;align-items:center;gap:24px;width:100%;max-width:460px}
@@ -583,7 +586,7 @@
     body.free-live .g-instant #instStop{align-self:center;padding:11px 30px}
 
     /* focus session: the one card that's visually different — isolated as the primary choice */
-    .g-focus{grid-area:focus;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+    .g-focus{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
     .panel.g-focus{border-color:color-mix(in srgb,var(--accent) 40%,var(--line));
       box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent);min-height:480px}   /* the hero keeps its presence even with natural-height rows (outranks .panel{min-height:0}) */
     .g-focus .blocktimer{font-size:clamp(30px,7vh,56px);margin:2px 0}
@@ -595,9 +598,9 @@
 
     /* list + chart: muted review rail, present but not competing */
     .g-list,.g-chart{opacity:.88}
-    .g-list{grid-area:list;display:flex;flex-direction:column;min-height:0}
+    .g-list{display:flex;flex-direction:column;min-height:0}
     .g-list .log{overflow:auto;max-height:340px;padding-left:9px}   /* scrolls in place (capped so it can't out-tower the hero); left pad clears the timeline dots' -5px + 3px ring, which overflow:auto would otherwise slice in half */
-    .g-chart{grid-area:chart;display:flex;flex-direction:column;min-height:0}
+    .g-chart{display:flex;flex-direction:column;min-height:0}
     .g-chart svg.chart{flex:none;height:auto}           /* natural aspect from the viewBox — flex:1 collapses to 0 in an auto-height column */
 
     .panel{min-height:0;overflow:auto;border-top:0;border:1px solid color-mix(in srgb,var(--line) 70%,transparent);border-radius:12px;padding:14px 30px;background:var(--surface);box-shadow:var(--shadow)}   /* radius/hairline in step with the mobile cards — one shape language */
@@ -629,12 +632,15 @@
       backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);
       box-shadow:inset 0 1px 0 var(--glass-hi)}
     .zentoggle:hover{color:var(--accent);border-color:var(--accent)}
-    body.zen .hero-col{display:flex;align-items:center;justify-content:center}
+    body.zen .hero-col{align-items:center;justify-content:center}
     body.zen .g-status,body.zen .g-list,body.zen .g-chart,body.zen .g-quit,body.zen .g-instant,body.zen .g-plannudge{display:none}
+    body.zen:not(.free-live) .qcol-a{display:none}   /* empty rails would push the timer off-centre */
+    body.zen .qcol-c{display:none}
+    body.zen .qcol-b{flex:1;align-items:center;justify-content:center}
     body.zen .g-focus{width:min(560px,92%);flex:none}
     body.zen .g-focus .blocktimer{font-size:clamp(40px,9vh,72px)}
     body.zen .zensum{display:block}
-    body.zen.free-live .g-instant{display:flex;width:min(560px,92%);flex:none}   /* a running instant session is the one thing */
+    body.zen.free-live .g-instant{display:flex}   /* a running instant session is the one thing (free-live already centres qcol-a) */
   }
 </style>
 </head>
@@ -649,6 +655,9 @@
 <div class="hero-col">
   <noscript><p style="text-align:center">Lapsr needs JavaScript — it's a local-only focus timer; nothing runs on a server.</p></noscript>
 
+  <!-- desktop column wrappers (display:contents on mobile → flat stack). qcol-a: the modes rail;
+       qcol-b: the focus hero, isolated centre; qcol-c: the review rail -->
+  <div class="qcol qcol-a">
   <!-- INSTANT: one-tap free focus (no plan, no credits) — its own launcher + live progress -->
   <section class="panel g-instant" id="instantPanel">
     <h2>Focus now</h2>
@@ -739,7 +748,9 @@
       <div class="lost">forfeited so far: <span id="wasted">0</span> kr</div>
     </div>
   </section>
+  </div><!-- /qcol-a -->
 
+  <div class="qcol qcol-b">
   <!-- FOCUS SESSION -->
   <section class="panel g-focus">
     <h2>Focus session</h2>
@@ -765,7 +776,9 @@
       <div class="zensum" id="zenSum"></div>
     </div>
   </section>
+  </div><!-- /qcol-b -->
 
+  <div class="qcol qcol-c">
   <!-- COMPLETED LOG (github-commit style) -->
   <section class="panel g-list">
     <h2>Completed<span class="streak" id="streak"></span></h2>
@@ -779,6 +792,7 @@
     <svg id="chart" class="chart" role="img" aria-label="Credits used over the period versus a steady pace line"></svg>
     <div class="heat" id="heatmap" aria-label="Period at a glance — one cell per day"></div>
   </section>
+  </div><!-- /qcol-c -->
   </div>
 </div>
 
