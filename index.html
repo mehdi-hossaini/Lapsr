@@ -134,6 +134,8 @@
     .g-status{background:var(--sec-2)}     /* quiet section tints — targeted by class since the qcol wrappers break nth-of-type */
     .g-list{background:var(--sec-4)}
     .moreinfo .panel:nth-of-type(2){background:var(--sec-2)}
+    /* mobile stack order (cards are flat here — qcol is display:contents): instant leads, execution-first */
+    .g-instant{order:1} .g-quit{order:2} .g-plannudge{order:3} .g-status{order:4} .g-focus{order:5} .g-list{order:6} .g-chart{order:7}
   }
   @media(max-width:680px){ header{padding:56px 22px 12px} main{padding:16px 22px 88px} .hero-col{padding:16px 22px 16px} .panel{padding:48px 2px} }
   /* controls respond instantly (no double-tap-zoom delay) and never trigger text selection mid-tap */
@@ -530,9 +532,11 @@
     .hero-col{flex:1;min-height:0;max-width:none;width:100%;margin:0;padding:10px 24px 16px;
       display:flex;flex-direction:row;align-items:flex-start;gap:18px}
     .qcol{display:flex;flex-direction:column;gap:18px;min-width:0}
-    .qcol-a{flex:0 1 340px}                              /* modes rail: instant, quit, nudge, status */
-    .qcol-b{flex:1 1 460px}                              /* the one thing to do — focus hero, isolated */
+    .qcol-a{flex:0 1 340px}                              /* pressure rail: status, then quit under it */
+    .qcol-b{flex:1 1 460px}                              /* centre: focus hero + the instant launcher */
     .qcol-c{flex:1 1 360px}                              /* review rail: completed, chart */
+    .qcol-a .g-status{order:-1}                          /* status leads; quit sits beneath it */
+    .g-plannudge{display:none}                           /* the plan-mode nudge is mobile-only */
     .g-quit{display:flex;flex-direction:column;justify-content:center}
 
     /* status: the pressure rail — docked left, and each fact appears exactly ONCE on the dashboard:
@@ -572,9 +576,8 @@
     .g-instant #instStop{flex:none}
     /* running: promote the instant session INTO the focus hero (its own row collapses; the grid holds) */
     /* a running free session is the one thing that matters — centre it, hide the dashboard (like zen) */
-    body.free-live .qcol-b,body.free-live .qcol-c{display:none}
-    body.free-live .g-quit,body.free-live .g-plannudge,body.free-live .g-status{display:none}
-    body.free-live .qcol-a{flex:1;align-items:center;justify-content:center}
+    body.free-live .qcol-a,body.free-live .qcol-c{display:none}
+    body.free-live .qcol-b{flex:1;align-items:center;justify-content:center}
     body.free-live .g-instant{width:min(560px,92%);flex:none;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:24px;padding:20px 34px;
       border-color:color-mix(in srgb,var(--accent) 40%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent),var(--shadow)}
     body.free-live .g-instant h2{display:block;margin:0;color:var(--accent)}
@@ -634,8 +637,7 @@
     .zentoggle:hover{color:var(--accent);border-color:var(--accent)}
     body.zen .hero-col{align-items:center;justify-content:center}
     body.zen .g-status,body.zen .g-list,body.zen .g-chart,body.zen .g-quit,body.zen .g-instant,body.zen .g-plannudge{display:none}
-    body.zen:not(.free-live) .qcol-a{display:none}   /* empty rails would push the timer off-centre */
-    body.zen .qcol-c{display:none}
+    body.zen .qcol-a,body.zen .qcol-c{display:none}   /* empty rails would push the centred card off-centre */
     body.zen .qcol-b{flex:1;align-items:center;justify-content:center}
     body.zen .g-focus{width:min(560px,92%);flex:none}
     body.zen .g-focus .blocktimer{font-size:clamp(40px,9vh,72px)}
@@ -658,35 +660,6 @@
   <!-- desktop column wrappers (display:contents on mobile → flat stack). qcol-a: the modes rail;
        qcol-b: the focus hero, isolated centre; qcol-c: the review rail -->
   <div class="qcol qcol-a">
-  <!-- INSTANT: one-tap free focus (no plan, no credits) — its own launcher + live progress -->
-  <section class="panel g-instant" id="instantPanel">
-    <h2>Focus now</h2>
-    <div class="inst-idle">
-      <input id="instTask" placeholder="what are you focusing on? (optional)" aria-label="Instant focus task" list="intentList" />
-      <div class="inst-tiles" id="instTiles" role="group" aria-label="Pick a length to start focusing">
-        <button class="inst-tile" type="button" data-min="25"><span class="m">25</span><span class="u">min</span><span class="k">quick</span></button>
-        <button class="inst-tile" type="button" data-min="50" data-default><span class="m">50</span><span class="u">min</span><span class="k">deep work</span></button>
-        <button class="inst-tile" type="button" data-min="90"><span class="m">90</span><span class="u">min</span><span class="k">flow</span></button>
-      </div>
-      <div class="inst-hint">One tap — no plan, no credits, just focus. It logs when you finish.</div>
-    </div>
-    <div class="inst-run" aria-live="polite">
-      <div class="inst-ringwrap">
-        <svg class="inst-ring" viewBox="0 0 120 120" aria-hidden="true">
-          <circle class="ring-bg" cx="60" cy="60" r="54"/>
-          <circle class="ring-fg" id="instRingFg" cx="60" cy="60" r="54"/>
-        </svg>
-        <div class="inst-ringmid"><div class="inst-time" id="instTime">--:--</div><div class="inst-runtask" id="instRunTask"></div></div>
-      </div>
-      <div class="inst-barwrap">
-        <div class="inst-runtask" id="instRunTask2"></div>
-        <div class="inst-bar"><i id="instBarFill"></i></div>
-        <div class="inst-bartime" id="instTime2">--:--</div>
-      </div>
-      <button id="instStop" class="ghost" type="button">Stop</button>
-    </div>
-  </section>
-
   <!-- QUIT A HABIT: standalone 30-day deposit contract — no plan needed, like the instant panel -->
   <section class="panel g-quit" id="quitPanel">
     <h2>Quit a habit</h2>
@@ -774,6 +747,35 @@
       </div>
       <div class="hint" id="blockHint" aria-live="polite">Finish a focus session to claim one credit.</div>
       <div class="zensum" id="zenSum"></div>
+    </div>
+  </section>
+
+  <!-- INSTANT: one-tap free focus (no plan, no credits) — its own launcher + live progress -->
+  <section class="panel g-instant" id="instantPanel">
+    <h2>Focus now</h2>
+    <div class="inst-idle">
+      <input id="instTask" placeholder="what are you focusing on? (optional)" aria-label="Instant focus task" list="intentList" />
+      <div class="inst-tiles" id="instTiles" role="group" aria-label="Pick a length to start focusing">
+        <button class="inst-tile" type="button" data-min="25"><span class="m">25</span><span class="u">min</span><span class="k">quick</span></button>
+        <button class="inst-tile" type="button" data-min="50" data-default><span class="m">50</span><span class="u">min</span><span class="k">deep work</span></button>
+        <button class="inst-tile" type="button" data-min="90"><span class="m">90</span><span class="u">min</span><span class="k">flow</span></button>
+      </div>
+      <div class="inst-hint">One tap — no plan, no credits, just focus. It logs when you finish.</div>
+    </div>
+    <div class="inst-run" aria-live="polite">
+      <div class="inst-ringwrap">
+        <svg class="inst-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-bg" cx="60" cy="60" r="54"/>
+          <circle class="ring-fg" id="instRingFg" cx="60" cy="60" r="54"/>
+        </svg>
+        <div class="inst-ringmid"><div class="inst-time" id="instTime">--:--</div><div class="inst-runtask" id="instRunTask"></div></div>
+      </div>
+      <div class="inst-barwrap">
+        <div class="inst-runtask" id="instRunTask2"></div>
+        <div class="inst-bar"><i id="instBarFill"></i></div>
+        <div class="inst-bartime" id="instTime2">--:--</div>
+      </div>
+      <button id="instStop" class="ghost" type="button">Stop</button>
     </div>
   </section>
   </div><!-- /qcol-b -->
