@@ -519,19 +519,19 @@
      Everything else (How it works / About FAQ) is mobile-only; hidden here so nothing scrolls.
      Placed last in the stylesheet so it wins over the unconditional rules above by source order. */
   @media(min-width:860px){
-    body{height:100vh;overflow:hidden}
-    .hero{height:100vh;display:flex;flex-direction:column}
+    body{min-height:100vh}                              /* the dashboard may scroll — panels take their natural height */
+    .hero{min-height:100vh;display:flex;flex-direction:column}
     main{display:none}
     header{flex:none;padding:14px 32px 2px;align-items:flex-start;text-align:left;margin:0;max-width:none}
     /* command center: pressure rail | the one thing to do | review rail. No strips — vertical rails
        scan top-to-bottom and absorb height variance without fighting the timer for width. */
     .hero-col{flex:1;min-height:0;max-width:none;width:100%;margin:0;padding:10px 24px 16px;
       display:grid;grid-template-columns:300px minmax(0,1.25fr) minmax(0,1fr);
-      grid-template-rows:1fr 1fr auto;
+      grid-template-rows:auto auto auto;
       grid-template-areas:"status focus list" "status focus chart" "quit instant chart";gap:18px}
     .g-quit{grid-area:quit;display:flex;flex-direction:column;justify-content:center}
     /* plan nudge gets a full-width bottom row only while it exists (no plan yet) */
-    body.no-plan .hero-col{grid-template-rows:1fr 1fr auto auto;
+    body.no-plan .hero-col{grid-template-rows:auto auto auto auto;
       grid-template-areas:"status focus list" "status focus chart" "quit instant chart" "nudge nudge nudge"}
     .g-plannudge{grid-area:nudge}
 
@@ -585,7 +585,7 @@
     /* focus session: the one card that's visually different — isolated as the primary choice */
     .g-focus{grid-area:focus;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
     .panel.g-focus{border-color:color-mix(in srgb,var(--accent) 40%,var(--line));
-      box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent)}
+      box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent);min-height:480px}   /* the hero keeps its presence even with natural-height rows (outranks .panel{min-height:0}) */
     .g-focus .blocktimer{font-size:clamp(30px,7vh,56px);margin:2px 0}
     /* declutter: window line + phase tag + hint all repeat the status strip / status line — drop them so the
        hero stays roomy and organised as the window shrinks (it was overflowing into an internal scrollbar). */
@@ -596,9 +596,9 @@
     /* list + chart: muted review rail, present but not competing */
     .g-list,.g-chart{opacity:.88}
     .g-list{grid-area:list;display:flex;flex-direction:column;min-height:0}
-    .g-list .log{overflow:auto;min-height:0}
+    .g-list .log{overflow:auto;max-height:440px}        /* the ledger scrolls in place — a long history must not stretch the page */
     .g-chart{grid-area:chart;display:flex;flex-direction:column;min-height:0}
-    .g-chart svg.chart{flex:1;height:auto;min-height:0}
+    .g-chart svg.chart{flex:none;height:auto}           /* natural aspect from the viewBox — flex:1 collapses to 0 in an auto-height column */
 
     .panel{min-height:0;overflow:auto;border-top:0;border:1px solid color-mix(in srgb,var(--line) 70%,transparent);border-radius:12px;padding:14px 30px;background:var(--surface);box-shadow:var(--shadow)}   /* radius/hairline in step with the mobile cards — one shape language */
     .divider{margin:10px auto}
