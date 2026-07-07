@@ -157,7 +157,8 @@
   .row{display:flex;gap:44px;flex-wrap:wrap;align-items:baseline;justify-content:center}
   .stat .n{font:500 32px/1 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
   .stat .l{color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:.18em;margin-top:6px}
-  /* hierarchy through scale, not color: "credits left" leads, used/budget recede (mobile card only — the desktop strip stays uniform) */
+  /* "credits left" leads twice over — accent color on both layouts, larger scale on the mobile card */
+  .g-status .stat:first-child .n{color:var(--accent)}
   @media(max-width:859px){
     .g-status .stat:first-child .n{font-size:42px}
     .g-status .stat:not(:first-child) .n{font-size:23px;color:var(--dim)}
@@ -171,7 +172,7 @@
   /* at-risk: content over chrome — a hairline, a large ink figure, quiet captions. The number carries the weight. */
   .risk{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;margin-top:30px;padding-top:26px;
     border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
-  .risk .big{font:500 30px/1 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;color:var(--txt)}
+  .risk .big{font:500 30px/1 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;color:var(--accent)}   /* money on the line glows warm — the one accent, not an alarm */
   .risk .lost{font-size:12px;color:var(--dim);letter-spacing:.02em}
   .embox{width:340px;max-width:100%;margin:0}
   .emhead{font-size:11px;text-transform:uppercase;letter-spacing:.25em;color:var(--dim);font-weight:500}
