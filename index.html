@@ -82,6 +82,8 @@
     --sec-2:color-mix(in srgb,#d79921 6.5%,var(--surface)); --sec-4:color-mix(in srgb,#98971a 6%,var(--surface)); --sec-6:color-mix(in srgb,#b16286 5.5%,var(--surface));
     /* liquid glass — translucent frosted surfaces + bright top edge, used on a few floating controls */
     --glass-bg:color-mix(in srgb,var(--panel) 72%,transparent); --glass-hi:color-mix(in srgb,#fff 55%,transparent); --glass-brd:color-mix(in srgb,#fff 40%,var(--line));
+    /* sheet section hues — one quiet gruvbox voice per section so scroll position reads unconsciously */
+    --hue-predet:#d79921; --hue-em:#689d6a; --hue-backup:#b16286;
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -92,6 +94,7 @@
       --shadow:0 1px 3px rgba(0,0,0,.15),0 8px 24px rgba(0,0,0,.18);
       --sec-2:color-mix(in srgb,#fabd2f 9%,var(--surface)); --sec-4:color-mix(in srgb,#b8bb26 8.5%,var(--surface)); --sec-6:color-mix(in srgb,#d3869b 8%,var(--surface));
       --glass-bg:color-mix(in srgb,var(--panel) 58%,transparent); --glass-hi:color-mix(in srgb,#fff 12%,transparent); --glass-brd:color-mix(in srgb,#fff 12%,var(--line));
+      --hue-predet:#fabd2f; --hue-em:#8ec07c; --hue-backup:#d3869b;
     }
   }
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -337,11 +340,14 @@
   dialog.sheet[open]{animation:sheetUp .5s cubic-bezier(.16,1,.3,1)}
   dialog.sheet[open]::backdrop{animation:sheetFade .45s ease}
   dialog.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
-  /* grouped-inset style — the sheet is already a raised surface, so groups sit as quiet fills with a
-     hairline, no drop shadows: boxes inside boxes read as chrome, not content */
+  /* liquid-glass group cards — frosted fills with a bright top edge and the section's hue whispering
+     through the border; same material as the instant tiles and composer bar */
   .sheet .rangepick,.sheet .grid2,.sheet .embox,.sheet .pdlist,.sheet .pdgroup,.sheet .bkgroup{
-    background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 45%,transparent);
-    border-radius:14px;padding:16px;margin:10px 0 6px}
+    background:color-mix(in srgb,var(--surface) 76%,transparent);
+    border:1px solid color-mix(in srgb,var(--hue,var(--line)) 20%,var(--glass-brd));
+    border-radius:14px;padding:16px;margin:10px 0 6px;
+    backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);
+    box-shadow:inset 0 1px 0 var(--glass-hi)}
   .sheet .embox{width:auto}
   dialog.sheet h2{margin-top:0}
   .sheet-x{position:absolute;top:12px;right:16px;z-index:3;margin:0}   /* tucked — the grab handle leads the sheet, the ✕ stays reachable without owning a row */
@@ -352,10 +358,20 @@
     background:var(--glass-bg);border:1px solid var(--glass-brd);backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);
     box-shadow:inset 0 1px 0 var(--glass-hi)}
   .gear:hover{color:var(--accent);transform:rotate(30deg)}
-  /* one scroll page — every section stacked, separated by hairlines; no tabs, no paging */
-  .pane{padding:6px 0 26px}
-  .pane+.pane{border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent);padding-top:24px}
-  .pane>h2{margin:0 0 18px}
+  /* one scroll page — sections separated by sticky glass headers, each with its own quiet hue */
+  .pane{padding:2px 0 28px}
+  .pane[data-pane="plan"]{--hue:var(--accent)}
+  .pane[data-pane="predet"]{--hue:var(--hue-predet)}
+  .pane[data-pane="em"]{--hue:var(--hue-em)}
+  .pane[data-pane="backup"]{--hue:var(--hue-backup)}
+  /* sticky numbered eyebrow — mirrors the page sections' header language, floats on glass while its section scrolls */
+  .pane>h2{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin:0 -22px 16px;padding:13px 22px;
+    background:var(--glass-bg);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);
+    box-shadow:inset 0 -1px 0 color-mix(in srgb,var(--hue) 20%,transparent)}
+  dialog.sheet{counter-reset:sheetsec}
+  .pane>h2::before{content:counter(sheetsec,decimal-leading-zero);counter-increment:sheetsec;
+    font:500 12px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0;color:var(--hue)}
+  .pane>h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--hue) 40%,transparent),transparent)}
   .commit .node{position:absolute;left:-5px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
   .commit .msg{flex:1;color:var(--txt);font-size:13px;word-break:break-word}
   .commit .msg .unnamed{color:var(--dim);font-style:italic}
