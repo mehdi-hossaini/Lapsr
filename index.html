@@ -596,7 +596,7 @@
     /* list + chart: muted review rail, present but not competing */
     .g-list,.g-chart{opacity:.88}
     .g-list{grid-area:list;display:flex;flex-direction:column;min-height:0}
-    .g-list .log{overflow:auto;max-height:340px}        /* the ledger scrolls in place — capped so it can't out-tower the focus hero and leave the rail lopsided */
+    .g-list .log{overflow:auto;max-height:340px;padding-left:9px}   /* scrolls in place (capped so it can't out-tower the hero); left pad clears the timeline dots' -5px + 3px ring, which overflow:auto would otherwise slice in half */
     .g-chart{grid-area:chart;display:flex;flex-direction:column;min-height:0}
     .g-chart svg.chart{flex:none;height:auto}           /* natural aspect from the viewBox — flex:1 collapses to 0 in an auto-height column */
 
