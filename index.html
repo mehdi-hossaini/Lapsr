@@ -523,16 +523,16 @@
     .hero{min-height:100vh;display:flex;flex-direction:column}
     main{display:none}
     header{flex:none;padding:14px 32px 2px;align-items:flex-start;text-align:left;margin:0;max-width:none}
-    /* command center: pressure rail | the one thing to do | review rail. No strips — vertical rails
-       scan top-to-bottom and absorb height variance without fighting the timer for width. */
+    /* command center: pressure rail | the one thing to do | review rail. Cards size to their CONTENT
+       (align-items:start) — no spanning, so a tall Completed list can't stretch the status card into a
+       column of empty space. Each rail stacks top-down; the page scrolls if a rail runs long. */
     .hero-col{flex:1;min-height:0;max-width:none;width:100%;margin:0;padding:10px 24px 16px;
-      display:grid;grid-template-columns:300px minmax(0,1.25fr) minmax(0,1fr);
-      grid-template-rows:auto auto auto;
-      grid-template-areas:"status focus list" "status focus chart" "quit instant chart";gap:18px}
+      display:grid;grid-template-columns:300px minmax(0,1.3fr) minmax(0,1fr);
+      grid-auto-rows:min-content;align-items:start;
+      grid-template-areas:"status focus list" "quit instant chart";gap:18px}
     .g-quit{grid-area:quit;display:flex;flex-direction:column;justify-content:center}
     /* plan nudge gets a full-width bottom row only while it exists (no plan yet) */
-    body.no-plan .hero-col{grid-template-rows:auto auto auto auto;
-      grid-template-areas:"status focus list" "status focus chart" "quit instant chart" "nudge nudge nudge"}
+    body.no-plan .hero-col{grid-template-areas:"status focus list" "quit instant chart" "nudge nudge nudge"}
     .g-plannudge{grid-area:nudge}
 
     /* status: the pressure rail — docked left, and each fact appears exactly ONCE on the dashboard:
@@ -596,7 +596,7 @@
     /* list + chart: muted review rail, present but not competing */
     .g-list,.g-chart{opacity:.88}
     .g-list{grid-area:list;display:flex;flex-direction:column;min-height:0}
-    .g-list .log{overflow:auto;max-height:440px}        /* the ledger scrolls in place — a long history must not stretch the page */
+    .g-list .log{overflow:auto;max-height:340px}        /* the ledger scrolls in place — capped so it can't out-tower the focus hero and leave the rail lopsided */
     .g-chart{grid-area:chart;display:flex;flex-direction:column;min-height:0}
     .g-chart svg.chart{flex:none;height:auto}           /* natural aspect from the viewBox — flex:1 collapses to 0 in an auto-height column */
 
