@@ -245,14 +245,12 @@
   .qsign summary{cursor:pointer;color:var(--dim);font-size:13px;letter-spacing:.02em;text-align:center;padding:2px 0}
   .qsign summary:hover{color:var(--accent)}
   .qsign[open] summary{color:var(--txt);margin-bottom:10px}
-  /* desktop: the active contract reads as one compact wrapped row under the focus hero */
+  /* desktop: quit sits at the foot of the pressure rail — compact column, the stats line carries the numbers */
   @media(min-width:860px){
-    .g-quit .quitblock{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px 20px}
     .g-quit .quitblock .qhead{display:none}
-    .g-quit .quitblock .heat,.g-quit .quitblock .actions{margin:0}
-    .g-quit #quitActive{display:flex;align-items:center;justify-content:center;gap:14px;margin:6px auto 0;max-width:none}
+    .g-quit #quitActive{display:flex;align-items:center;justify-content:center;gap:12px;margin:8px auto 0;max-width:none}
     .g-quit #quitActive .actions{margin:0}
-    .g-quit #quitContract{display:none}   /* the stats row already carries the numbers — desktop keeps only the abandon action */
+    .g-quit #quitContract{display:none}
     .g-quit #q_abandon{padding:7px 14px;font-size:12px}
   }
   .quitblock{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
@@ -523,52 +521,38 @@
     .hero{height:100vh;display:flex;flex-direction:column}
     main{display:none}
     header{flex:none;padding:14px 32px 2px;align-items:flex-start;text-align:left;margin:0;max-width:none}
+    /* command center: pressure rail | the one thing to do | review rail. No strips — vertical rails
+       scan top-to-bottom and absorb height variance without fighting the timer for width. */
     .hero-col{flex:1;min-height:0;max-width:none;width:100%;margin:0;padding:10px 24px 16px;
-      display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:auto auto 1fr 1fr auto;
-      grid-template-areas:"instant instant" "status status" "focus list" "focus chart" "quit chart";gap:14px}
-    /* quit: a calm card under the focus hero — the left column has the spare height, the rail keeps its room */
+      display:grid;grid-template-columns:300px minmax(0,1.25fr) minmax(0,1fr);
+      grid-template-rows:1fr 1fr auto;
+      grid-template-areas:"status focus list" "status focus chart" "quit instant chart";gap:14px}
     .g-quit{grid-area:quit;display:flex;flex-direction:column;justify-content:center}
-    /* plan nudge gets its own full-width row only while it exists (no plan yet) */
-    body.no-plan .hero-col{grid-template-rows:auto auto auto 1fr 1fr auto;
-      grid-template-areas:"instant instant" "nudge nudge" "status status" "focus list" "focus chart" "quit chart"}
+    /* plan nudge gets a full-width bottom row only while it exists (no plan yet) */
+    body.no-plan .hero-col{grid-template-rows:1fr 1fr auto auto;
+      grid-template-areas:"status focus list" "status focus chart" "quit instant chart" "nudge nudge nudge"}
     .g-plannudge{grid-area:nudge}
 
-    /* status: a dashboard strip of FOUR ordered groups — Period · Credits · Progress · At-risk —
-       each in its own cell divided by a hairline. Fixed widths + nowrap so ticking numbers never
-       reflow the row (the "texts keep moving" problem). */
-    .g-status{grid-area:status;display:flex;align-items:stretch;flex-wrap:wrap;gap:0;text-align:left;padding:0;overflow:hidden}
-    .g-status h2,.g-status .divider,.g-status .credits{display:none}
-    .g-status .st-period,.g-status .row,.g-status .usage,.g-status .risk{
-      margin:0;padding:18px 34px;display:flex;flex-direction:column;justify-content:center;white-space:nowrap;position:relative}
-    /* groups separated by spacing alone — no divider lines */
-    /* uniform eyebrow labels + big tabular figures across every group — editorial, calm hierarchy */
-    .g-status .stat .l,.g-status .usage-row .t,.g-status .risk .l{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:500}
-    .g-status .st-period{align-items:flex-start;gap:7px;min-width:196px}
-    .g-status .st-period .countdown{font-size:27px;letter-spacing:.01em}
-    .g-status .st-period .sub2{margin:0;color:var(--dim);font-size:10.5px;letter-spacing:.03em}
-    .g-status .row{flex-direction:row;align-items:flex-start;gap:28px;min-width:214px}
-    .g-status .stat{min-width:44px;display:flex;flex-direction:column;gap:6px}
-    .g-status .stat .n{font-size:23px}
-    /* progress — slim gradient bars (visual, not dense text) */
-    .g-status .usage{gap:15px;min-width:226px}
-    .g-status .usage-row{gap:7px;min-width:176px}
-    .g-status .usage-row .urow-top{gap:12px}
+    /* status: the pressure rail — the mobile card's own vertical flow, docked left. Countdown,
+       credits, meters and the at-risk figure read top-to-bottom and never fight the timer for width. */
+    .g-status{grid-area:status;display:flex;flex-direction:column;justify-content:center}
+    .g-status .st-period .countdown{font-size:26px;letter-spacing:.01em}
+    .g-status .st-period .sub2{margin-top:4px;font-size:10.5px}
+    .g-status .stat .n{font-size:24px}
+    .g-status .usage{gap:12px}
     .g-status .usage-row .pct{font-size:10.5px;color:var(--dim)}
-    .g-status .track{display:block;height:4px;border-radius:999px;background:color-mix(in srgb,var(--line) 55%,transparent);overflow:hidden}
+    .g-status .track{height:4px}
     .g-status .track > i{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 42%,transparent),var(--accent))}
-    .g-status .usage-row .r{display:none}               /* drop the "resets in…" sub-line — already in the period group */
-    .g-status .risk .big{font-size:23px}
-    .g-status .risk .lost{font-size:10px;color:var(--dim)}
-    .g-status .risk{align-items:flex-start;gap:6px;min-width:190px;border:0}   /* the strip separates by spacing alone */
-    .g-status .risk > div:first-child{display:flex;flex-direction:column;gap:6px}
-    .g-status .risk br{display:none}
+    .g-status .usage-row .r{display:none}               /* "resets in…" duplicates the countdown above */
+    .g-status .risk .big{font-size:22px}
+    .g-status .risk .lost{font-size:10.5px}
 
     /* instant: a horizontal quick-launch strip — DESKTOP approach uses a progress BAR, not a ring */
     .g-instant{grid-area:instant;display:flex;align-items:center;gap:18px;padding:12px 24px;text-align:left}
     .g-instant h2{display:none}
-    .g-instant .inst-idle{display:flex;align-items:center;gap:14px;width:100%}
-    .g-instant #instTask{margin:0;flex:1;min-width:0;text-align:left;padding:9px 16px}
-    .g-instant .inst-tiles{display:flex;gap:10px}
+    .g-instant .inst-idle{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%}
+    .g-instant #instTask{margin:0;min-width:0;text-align:left;padding:9px 16px}
+    .g-instant .inst-tiles{display:flex;gap:10px;justify-content:center}
     .g-instant .inst-tile{flex-direction:row;align-items:baseline;gap:6px;padding:9px 16px;border-radius:999px;box-shadow:none}
     .g-instant .inst-tile .m{font-size:17px}
     .g-instant .inst-tile .u{font-size:9px}
@@ -581,9 +565,7 @@
     .g-instant .inst-bartime{font:500 22px/1 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;flex:none}
     .g-instant .inst-runtask{font-size:12px;color:var(--dim);flex:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .g-instant #instStop{flex:none}
-    /* running: promote the instant session INTO the focus hero (no empty hole) — big countdown + bar + Stop.
-       Drop the now-empty top strip row so nothing gaps at the top. */
-    body.free-live .hero-col{grid-template-rows:auto 1fr 1fr auto;grid-template-areas:"status status" "focus list" "focus chart" "quit chart"}
+    /* running: promote the instant session INTO the focus hero (its own row collapses; the grid holds) */
     body.free-live .g-plannudge{display:none}   /* mid-session is not the moment to pitch planning */
     body.free-live .g-instant{grid-area:focus;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:24px;padding:20px 34px;
       border-color:color-mix(in srgb,var(--accent) 40%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent),var(--shadow)}
@@ -606,8 +588,8 @@
     .g-focus .ctabar{max-width:420px;width:100%}
     .g-focus .sblock{width:100%;max-width:420px;margin-top:10px}
 
-    /* list + chart: muted secondary rail, present but not competing */
-    .g-list,.g-chart{grid-column:2;opacity:.88}
+    /* list + chart: muted review rail, present but not competing */
+    .g-list,.g-chart{opacity:.88}
     .g-list{grid-area:list;display:flex;flex-direction:column;min-height:0}
     .g-list .log{overflow:auto;min-height:0}
     .g-chart{grid-area:chart;display:flex;flex-direction:column;min-height:0}
