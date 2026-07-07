@@ -133,7 +133,7 @@
   }
   @media(max-width:680px){ header{padding:56px 22px 12px} main{padding:16px 22px 88px} .hero-col{padding:16px 22px 16px} .panel{padding:48px 2px} }
   /* controls respond instantly (no double-tap-zoom delay) and never trigger text selection mid-tap */
-  button,.inst-tile,.tabnav,.tabdot,.drawgrab,.restpill,.pddel,.gear,.rp-day{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+  button,.inst-tile,.drawgrab,.restpill,.pddel,.gear,.rp-day{touch-action:manipulation;-webkit-user-select:none;user-select:none}
   dialog.sheet{overscroll-behavior:contain}   /* sheet scroll never chains into the page behind it */
   /* mobile/tablet: make each section's START unmistakable — an editorial numbered eyebrow + a rule that
      fades to the right, in the one ink accent. Premium separation through type and rhythm, not cards. */
@@ -327,7 +327,7 @@
   .chk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex:none}
   /* ===== bottom sheets — native <dialog>, action-only; the page stays a scrollable billboard ===== */
   dialog.sheet{border:0;background:color-mix(in srgb,var(--panel) 85%,transparent);color:var(--txt);width:100%;max-width:600px;margin:0 auto;position:fixed;inset:auto 0 0 0;
-    padding:10px 22px 0;border-radius:20px 20px 0 0;max-height:88vh;overflow:auto;border-top:1px solid var(--glass-brd);
+    padding:10px 22px calc(18px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;max-height:88vh;overflow:auto;border-top:1px solid var(--glass-brd);
     backdrop-filter:blur(24px) saturate(1.5);-webkit-backdrop-filter:blur(24px) saturate(1.5);
     box-shadow:inset 0 1px 0 var(--glass-hi),0 -10px 34px rgba(0,0,0,.30)}
   @media(max-width:680px){ dialog.sheet{max-height:70vh} }
@@ -352,25 +352,10 @@
     background:var(--glass-bg);border:1px solid var(--glass-brd);backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);
     box-shadow:inset 0 1px 0 var(--glass-hi)}
   .gear:hover{color:var(--accent);transform:rotate(30deg)}
-  /* one tab title at a time + prev/next — sidesteps any "N tabs don't fit the width" problem entirely */
-  /* tab nav lives at the BOTTOM of the sheet as a sticky bar — thumb-reachable while the pane scrolls */
-  .tabs{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;bottom:0;z-index:2;
-    margin:18px -22px 0;padding:12px 20px calc(12px + env(safe-area-inset-bottom));min-height:50px;
-    background:var(--glass-bg);backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4);
-    border-top:1px solid var(--glass-brd);box-shadow:inset 0 1px 0 var(--glass-hi),0 -8px 18px -14px rgba(0,0,0,.35)}
-  .tabtitle{color:var(--accent);font:500 12px/1 'Inter',sans-serif;letter-spacing:.16em;text-transform:uppercase}
-  /* DESKTOP nav: prev/next arrows (click). MOBILE nav: pager dots + swipe. Each shows only on its breakpoint. */
-  .tabnav{background:none;border:0;color:var(--dim);font-size:21px;line-height:1;cursor:pointer;padding:5px 13px;border-radius:8px;transition:color .15s}
-  .tabnav:hover{color:var(--accent)}
-  .tabdots{display:none;gap:8px;align-items:center}   /* dots are mobile-only (shown in the max-859 block) */
-  .tabdot{width:7px;height:7px;border-radius:50%;border:0;padding:0;cursor:pointer;
-    background:color-mix(in srgb,var(--dim) 45%,transparent);transition:background .2s,transform .2s}
-  .tabdot:hover{background:var(--dim)}
-  .tabdot.on{background:var(--accent);transform:scale(1.3)}
-  @media(max-width:859px){ .tabdots{display:flex} }   /* mobile keeps arrows too, plus dots + swipe */
-  .pane{display:none}
-  .pane.active{display:block;animation:paneIn .28s cubic-bezier(.16,1,.3,1)}
-  @keyframes paneIn{from{opacity:.3;transform:translateX(var(--slide,0))}to{opacity:1;transform:none}}
+  /* one scroll page — every section stacked, separated by hairlines; no tabs, no paging */
+  .pane{padding:6px 0 26px}
+  .pane+.pane{border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent);padding-top:24px}
+  .pane>h2{margin:0 0 18px}
   .commit .node{position:absolute;left:-5px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
   .commit .msg{flex:1;color:var(--txt);font-size:13px;word-break:break-word}
   .commit .msg .unnamed{color:var(--dim);font-style:italic}
@@ -743,6 +728,7 @@
   <div class="grab" aria-hidden="true"></div>
 
   <div class="pane" data-pane="plan">
+    <h2>Plan</h2>
     <label for="s_goal">Goal this period</label>
     <input id="s_goal" placeholder="e.g. ship the landing page" />
     <label>Period</label>
@@ -767,6 +753,7 @@
   </div>
 
   <div class="pane" data-pane="predet">
+    <h2>Predetermined</h2>
     <p class="emnote" id="predetNote">Queue sessions ahead of time — once today's window opens, the next due one starts on its own, no tap needed. Requires a saved plan.</p>
     <div class="pdgroup">
       <div class="pdform">
@@ -783,6 +770,7 @@
   </div>
 
   <div class="pane" data-pane="em">
+    <h2>Emergency days</h2>
     <div class="embox">
       <p class="emnote">Genuine emergencies only — illness, a family crisis. Not "I don't feel like it." Pre-commit the night before; that day's stake is shielded, nothing forfeited. They don't come back.</p>
       <div class="emtokens" id="restCount" aria-label="emergency days remaining"></div>
@@ -793,6 +781,7 @@
   </div>
 
   <div class="pane" data-pane="backup">
+    <h2>Backup</h2>
     <div class="bkgroup">
       <div class="actions">
         <button id="export" class="ghost">Export file</button>
@@ -803,12 +792,6 @@
     </div>
   </div>
 
-  <div class="tabs" role="tablist">
-    <button type="button" class="tabnav" id="tabPrev" aria-label="Previous tab">‹</button>
-    <span class="tabtitle" id="tabTitle" role="tab" aria-live="polite">Plan</span>
-    <div class="tabdots" id="tabDots" aria-label="Swipe or tap to switch tab"></div>
-    <button type="button" class="tabnav" id="tabNext" aria-label="Next tab">›</button>
-  </div>
 </dialog>
 
 <script type="module">
@@ -1320,7 +1303,7 @@ function render(){
     if(state.wasted>wasted0+0.5) burnKr(state.wasted-wasted0);   // anything just billed (windows and/or period roll) burns on screen once
     if(phase===null) checkPredetAuto(now);                 // fire the next due predetermined session, if any
   }
-  if($("sheet").open && document.querySelector('.pane[data-pane=predet]').classList.contains("active")) renderPredet();  // live countdown while the tab is visible
+  if($("sheet").open) renderPredet();                   // live countdown while the sheet is open (signature-gated, cheap)
   const {start,end,label}=periodBounds(state.cfg,now,state.startedAt||now.getTime());
   $("periodLabel").textContent=pending?"Plan saved":label;
   const cd=$("countdown");
@@ -1600,18 +1583,15 @@ function renderPredet(){
 }
 $("pd_add").onclick=addPredet;
 $("predetList").addEventListener("click", e=>{ const d=e.target.closest("[data-del]"); if(d) removePredet(d.dataset.del); });
-const TAB_ORDER=["plan","predet","em","backup"], TAB_LABEL={plan:"Plan",predet:"Predetermined",em:"Emergency",backup:"Backup"};
-let curTab="plan";
-function showTab(tab){                                                                     // one sheet, four tabs — a title + pager dots, swipe or tap to move
-  curTab=tab;
-  $("tabTitle").textContent=TAB_LABEL[tab];
-  document.querySelectorAll("#sheet .pane").forEach(p=>p.classList.toggle("active", p.dataset.pane===tab));
-  $("tabDots").innerHTML=TAB_ORDER.map(t=>`<button type="button" class="tabdot${t===tab?" on":""}" data-tab="${t}" aria-label="${TAB_LABEL[t]}"${t===tab?' aria-current="true"':''}></button>`).join("");
+const TAB_LABEL={plan:"Plan",predet:"Predetermined",em:"Emergency",backup:"Backup"};   // section keys — still validates ?sheet= deep links
+function openSheet(tab){ closeCompose(); fillSettings(); renderRest(); renderPredet();  // hydrate, present — one scroll page, no tabs
+  const s=$("sheet"); if(!s.open) s.showModal();
+  s.scrollTop=0;
+  if(tab && tab!=="plan"){
+    const go=()=>document.querySelector('.pane[data-pane="'+tab+'"]')?.scrollIntoView({block:"start"});
+    go(); document.fonts?.ready.then(go);               // re-anchor once the webfonts land — their reflow shifts the section offsets
+  }
 }
-function stepTab(dir){ const i=TAB_ORDER.indexOf(curTab);
-  $("sheet").style.setProperty("--slide", dir>0?"18px":"-18px");                          // new pane slides in from the swipe direction
-  showTab(TAB_ORDER[(i+dir+TAB_ORDER.length)%TAB_ORDER.length]); }
-function openSheet(tab){ closeCompose(); fillSettings(); renderRest(); renderPredet(); showTab(tab||"plan"); const s=$("sheet"); if(!s.open) s.showModal(); }  // hydrate, select tab, present
 // compact composer: collapsed to a FAB, expands on tap; a tap outside or Escape closes it
 function openCompose(){ document.body.classList.add("compose-open"); if(getComputedStyle($("intent")).display!=="none") setTimeout(()=>$("intent").focus(),80); }
 function closeCompose(){ document.body.classList.remove("compose-open"); }
@@ -1621,30 +1601,6 @@ $("instStop").onclick=cancelBlock;
 $("instTask").addEventListener("keydown",e=>{ if(e.key==="Enter") startInstant(+document.querySelector(".inst-tile[data-default]").dataset.min); });   // Enter = the default tile's length — one source of truth with the visible chips
 document.addEventListener("click",e=>{ if(document.body.classList.contains("compose-open") && !e.target.closest("#ctaBar")) closeCompose(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeCompose(); });
-$("tabPrev").onclick=()=>stepTab(-1); $("tabNext").onclick=()=>stepTab(1);   // desktop arrows
-$("tabDots").addEventListener("click", e=>{ const b=e.target.closest("[data-tab]"); if(b && b.dataset.tab!==curTab){ $("sheet").style.setProperty("--slide", TAB_ORDER.indexOf(b.dataset.tab)>TAB_ORDER.indexOf(curTab)?"18px":"-18px"); showTab(b.dataset.tab); } });
-// ---- MOBILE momentum swipe (touch only) — passive listeners never call preventDefault, so vertical scrolling
-//      is always native; a horizontal flick (distance OR velocity) changes tab. Desktop uses the arrows above. ----
-(function(){ const sheet=$("sheet"); let sx=0,sy=0,st=0,horiz=false,dragging=false,pane=null;
-  sheet.addEventListener("touchstart", e=>{
-    if(getComputedStyle($("tabDots")).display==="none") return;                             // mobile only — the dots' CSS media query is the single source of the breakpoint
-    if(e.target.closest("input,select,textarea,.tabs")) return;                             // leave text fields + the dot pager alone
-    const t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=performance.now(); horiz=false; dragging=true; pane=sheet.querySelector(".pane.active");
-  }, {passive:true});
-  sheet.addEventListener("touchmove", e=>{
-    if(!dragging||!pane) return; const t=e.touches[0], dx=t.clientX-sx, dy=t.clientY-sy;
-    if(!horiz){ if(Math.abs(dx)<10) return; if(Math.abs(dy)>=Math.abs(dx)){ dragging=false; return; }  // vertical → let the browser scroll natively
-      horiz=true; pane.style.transition="none"; }
-    pane.style.transform="translateX("+dx*0.4+"px)"; pane.style.opacity=(1-Math.min(.4,Math.abs(dx)/900)).toFixed(3);
-  }, {passive:true});
-  const end=e=>{ if(!dragging) return; dragging=false;
-    const t=(e.changedTouches&&e.changedTouches[0])||{clientX:sx}, dx=t.clientX-sx, v=dx/Math.max(1,performance.now()-st);
-    if(pane){ pane.style.transition=""; pane.style.transform=""; pane.style.opacity=""; }
-    if(!horiz) return;
-    if(dx<-55 || v<-0.45) stepTab(1); else if(dx>55 || v>0.45) stepTab(-1);
-  };
-  sheet.addEventListener("touchend", end, {passive:true}); sheet.addEventListener("touchcancel", end, {passive:true});
-})();
 $("settingsBtn").onclick=()=>openSheet("plan");
 $("primaryCta").onclick=()=>{ if(!state.startedAt){ openSheet("plan"); } else { startBlock(); closeCompose(); } };  // no plan → open Plan (free focus lives in the instant panel); with a plan → start a metered session
 $("log").addEventListener("click", e=>{                                  // click a completed session to add/edit its description (commit body)
